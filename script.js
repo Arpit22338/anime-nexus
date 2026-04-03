@@ -150,6 +150,9 @@ class AnimeNexus {
 
     async open(anilistId) {
         try {
+            // Update URL without reloading page
+            window.history.pushState({}, '', `/animeplayer?id=${anilistId}`);
+            
             // Show loading state
             document.getElementById('player-overlay').classList.add('active');
             document.getElementById('display-title').textContent = 'LOADING...';
@@ -239,9 +242,14 @@ class AnimeNexus {
         this.currentLang = lang;
         this.populateServers();
         
-        // Reload episodes with new language
+        // Reload episodes with new language and auto-play episode 1
         if (this.currentBackendName) {
-            this.loadEpisodes(this.currentBackendName);
+            this.loadEpisodes(this.currentBackendName).then(() => {
+                // Auto-play first episode after language switch
+                if (this.episodes.length > 0) {
+                    this.playEpisode(1);
+                }
+            });
         }
     }
 
@@ -407,10 +415,25 @@ class AnimeNexus {
                 const proxyUrl = `${NEXUS_CONFIG.BACKEND_API}/proxy?url=${encodeURIComponent(data.stream_url)}&referer=${encodeURIComponent(data.referrer || 'https://allanime.day')}`;
                 
                 document.getElementById('video-engine').innerHTML = `
-                    <video controls autoplay style="width: 100%; height: 100%; background: #000;">
-                        <source src="${proxyUrl}" type="video/mp4">
-                        Your browser does not support HTML5 video.
-                    </video>
+                    <div style="position:relative;">
+                        <video id="nexus-video" controls autoplay crossorigin="anonymous" style="width: 100%; height: 100%; background: #000;">
+                            <source src="${proxyUrl}" type="video/mp4">
+                            Your browser does not support HTML5 video.
+                        </video>
+                        <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+                            <p style="color: var(--accent); font-size: 0.7rem; flex:1;">${data.resolution || 1080}p • ${this.currentLang.toUpperCase()}</p>
+                            ${this.currentLang === 'sub' ? '<button onclick="Nexus.toggleSubtitles()" class="control-btn" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:5px 10px;cursor:pointer;border-radius:3px;font-size:0.65rem;">CC</button>' : ''}
+                            <select onchange="Nexus.changeSpeed(this.value)" class="control-btn" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:5px 8px;cursor:pointer;border-radius:3px;font-size:0.65rem;">
+                                <option value="0.5">0.5x</option>
+                                <option value="0.75">0.75x</option>
+                                <option value="1" selected>1x</option>
+                                <option value="1.25">1.25x</option>
+                                <option value="1.5">1.5x</option>
+                                <option value="2">2x</option>
+                            </select>
+                            <a href="${proxyUrl}" download="episode-${episodeNum}.mp4" class="control-btn" style="background:var(--accent);color:#000;padding:5px 10px;text-decoration:none;border-radius:3px;font-size:0.65rem;font-weight:700;">⬇ DOWNLOAD</a>
+                        </div>
+                    </div>
                     <p style="color: var(--accent); font-size: 0.7rem; margin-top: 5px;">${data.resolution || 1080}p • ${this.currentLang.toUpperCase()}</p>
                 `;
             } else {
@@ -419,17 +442,24 @@ class AnimeNexus {
         } catch (error) {
             console.error('Failed to load stream:', error);
             const errMsg = error.name === 'AbortError' ? 'Request timed out - try again' : error.message;
+            const altLang = this.currentLang === 'sub' ? 'DUB' : 'SUB';
             document.getElementById('video-engine').innerHTML = `
                 <div style="color: #ff3366; padding: 40px; text-align: center;">
                     <h3>⚠️ STREAM ERROR</h3>
-                    <p>Episode ${episodeNum} could not be loaded</p>
+                    <p>Episode ${episodeNum} could not be loaded in ${this.currentLang.toUpperCase()}</p>
                     <p style="font-size: 12px; opacity: 0.7;">${errMsg}</p>
+                    <button onclick="Nexus.setLanguage('${this.currentLang === 'sub' ? 'dub' : 'sub'}')" style="margin-top:15px;background:var(--accent);color:#000;border:none;padding:8px 16px;cursor:pointer;border-radius:4px;font-weight:700;">
+                        TRY ${altLang} VERSION
+                    </button>
                 </div>
             `;
         }
     }
 
     close() {
+        // Reset URL to home
+        window.history.pushState({}, '', '/');
+        
         document.getElementById('player-overlay').classList.remove('active');
         document.getElementById('video-engine').innerHTML = '';
         document.getElementById('episode-list').innerHTML = '';
@@ -449,6 +479,21 @@ class AnimeNexus {
 
     goBack() {
         this.close();
+    }
+
+    changeSpeed(speed) {
+        const video = document.getElementById('nexus-video');
+        if (video) {
+            video.playbackRate = parseFloat(speed);
+        }
+    }
+
+    toggleSubtitles() {
+        const video = document.getElementById('nexus-video');
+        if (video && video.textTracks.length > 0) {
+            const track = video.textTracks[0];
+            track.mode = track.mode === 'showing' ? 'hidden' : 'showing';
+        }
     }
 
     stripHTML(html) {
