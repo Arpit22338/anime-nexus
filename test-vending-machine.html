@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Embed Provider Test - Vending Machine S3</title>
+    <style>
+        body {
+            background: #0a0e27;
+            color: #00ff9f;
+            font-family: 'JetBrains Mono', monospace;
+            padding: 20px;
+        }
+        h1 { color: #00ff9f; text-align: center; }
+        .provider {
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px solid #00ff9f;
+            border-radius: 10px;
+        }
+        .provider h2 { color: #00d4ff; margin-top: 0; }
+        .url { 
+            background: #1a1f3a; 
+            padding: 10px; 
+            margin: 10px 0;
+            border-radius: 5px;
+            word-break: break-all;
+            font-size: 12px;
+        }
+        iframe {
+            width: 100%;
+            height: 500px;
+            border: 2px solid #00d4ff;
+            border-radius: 5px;
+            margin-top: 10px;
+        }
+        .info {
+            background: #1a2332;
+            padding: 15px;
+            border-left: 4px solid #ff9500;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+<body>
+    <h1>🎌 ANIME EMBED TEST - VENDING MACHINE S3 🎌</h1>
+    
+    <div class="info">
+        <strong>Anime:</strong> Reborn as a Vending Machine, I Now Wander the Dungeon Season 3<br>
+        <strong>MAL ID:</strong> 62512<br>
+        <strong>AniList ID:</strong> 198939<br>
+        <strong>Episode:</strong> 1<br>
+        <strong>Format:</strong> TV<br>
+        <strong>Status:</strong> Currently Airing
+    </div>
+
+    <!-- Provider 1 -->
+    <div class="provider">
+        <h2>🎯 Provider 1: VidSrc.pro</h2>
+        <div class="url">https://vidsrc.pro/embed/anime/62512/1</div>
+        <iframe src="https://vidsrc.pro/embed/anime/62512/1" allowfullscreen></iframe>
+    </div>
+
+    <!-- Provider 2 -->
+    <div class="provider">
+        <h2>🎯 Provider 2: VidSrc.me (Query Params)</h2>
+        <div class="url">https://vidsrc.me/embed/anime?mal=62512&episode=1</div>
+        <iframe src="https://vidsrc.me/embed/anime?mal=62512&episode=1" allowfullscreen></iframe>
+    </div>
+
+    <!-- Provider 3 -->
+    <div class="provider">
+        <h2>🎯 Provider 3: VidSrc.in (Alternative)</h2>
+        <div class="url">https://vidsrc.in/embed/anime?mal=62512&episode=1</div>
+        <iframe src="https://vidsrc.in/embed/anime?mal=62512&episode=1" allowfullscreen></iframe>
+    </div>
+
+    <!-- Provider 4 -->
+    <div class="provider">
+        <h2>🎯 Provider 4: AniWave Embed</h2>
+        <div class="url">https://embed.aniwave.live/anime/62512/1</div>
+        <iframe src="https://embed.aniwave.live/anime/62512/1" allowfullscreen></iframe>
+    </div>
+
+    <!-- Provider 5 -->
+    <div class="provider">
+        <h2>🎯 Provider 5: Anime.gg</h2>
+        <div class="url">https://anime.gg/play/62512/1</div>
+        <iframe src="https://anime.gg/play/62512/1" allowfullscreen></iframe>
+    </div>
+
+    <div class="info" style="border-left-color: #00ff9f; margin-top: 40px;">
+        <strong>✅ Working Providers:</strong> Check which iframes load successfully<br>
+        <strong>⚠️ Not Working:</strong> Will show error or blank screen<br>
+        <strong>🔄 Switch:</strong> Use the provider buttons in the main app to try different sources
+    </div>
+
+    <script>
+        // Log iframe load events
+        document.querySelectorAll('iframe').forEach((iframe, index) => {
+            iframe.onload = () => {
+                console.log(`Provider ${index + 1} loaded:`, iframe.src);
+            };
+            iframe.onerror = () => {
+                console.error(`Provider ${index + 1} failed:`, iframe.src);
+            };
+        });
+    </script>
+</body>
+</html>

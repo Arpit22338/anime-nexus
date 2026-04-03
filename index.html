@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ANIME//NEXUS — RESURRECTED</title>
+    <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="tactical.css">
+</head>
+<body>
+    <nav class="nexus-nav">
+        <div class="logo">ANIME//NEXUS</div>
+        <div class="search-bar">
+            <input type="text" id="main-search" placeholder="BROADCAST_SEARCH...">
+            <button id="search-btn">SCAN</button>
+        </div>
+    </nav>
+
+    <main id="home">
+        <h2 class="section-title">ACTIVE_FREQUENCIES</h2>
+        <div class="anime-grid" id="trending-grid">
+            <!-- Cards injected here -->
+        </div>
+    </main>
+
+    <!-- Professional Player Overlay -->
+    <div id="player-overlay" class="player-overlay">
+        <button class="close-btn" onclick="Nexus.close()">TERMINATE_LINK</button>
+        
+        <div class="player-content">
+            <div class="player-main">
+                <div class="video-wing">
+                    <div class="video-container" id="video-engine">
+                        <!-- iframe -->
+                    </div>
+                    <div class="anime-details">
+                        <h1 class="details-title" id="display-title">ANIME_TITLE</h1>
+                        <p class="details-desc" id="display-desc">DATA_PENDING...</p>
+                    </div>
+                </div>
+
+                <aside class="control-panel">
+                    <div class="panel-section">
+                        <h4>FRANCHISE_SEASONS</h4>
+                        <select id="season-dropdown" class="cyber-select">
+                            <option value="">SELECT_SEASON</option>
+                        </select>
+                    </div>
+
+                    <div class="panel-section">
+                        <h4>STATION_NODES</h4>
+                        <div class="station-grid" id="server-list">
+                            <!-- Buttons -->
+                        </div>
+                    </div>
+
+                    <div class="panel-section ep-terminal">
+                        <h4>EPISODE_TERMINAL</h4>
+                        <div class="ep-grid" id="episode-list">
+                            <!-- Buttons -->
+                        </div>
+                    </div>
+                </aside>
+            </div>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
