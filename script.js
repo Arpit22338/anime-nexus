@@ -74,7 +74,7 @@ const query = {
 class AnimeNexus {
     constructor() {
         this.currentAnime = null;       // AniList anime data
-        this.currentBackendId = null;   // Backend provider anime ID
+        this.currentBackendName = null; // Backend provider anime NAME (for API calls)
         this.currentLang = 'sub';
         this.episodes = [];
         this.relatedSeasons = [];
@@ -234,8 +234,8 @@ class AnimeNexus {
         this.populateServers();
         
         // Reload episodes with new language
-        if (this.currentBackendId) {
-            this.loadEpisodes(this.currentBackendId);
+        if (this.currentBackendName) {
+            this.loadEpisodes(this.currentBackendName);
         }
     }
 
@@ -247,7 +247,7 @@ class AnimeNexus {
             const data = await response.json();
 
             if (data.success && data.episodes.length > 0) {
-                this.currentBackendId = data.anime.id;
+                this.currentBackendName = data.anime.name;  // Store NAME, not ID
                 this.episodes = data.episodes;
                 this.displayEpisodeList();
                 
@@ -273,12 +273,13 @@ class AnimeNexus {
         document.getElementById('episode-list').innerHTML = '<p style="color: #666; padding: 10px;">No episodes available</p>';
     }
 
-    async loadEpisodes(backendAnimeId) {
+    async loadEpisodes(backendAnimeName) {
         try {
-            const response = await fetch(`${NEXUS_CONFIG.BACKEND_API}/episodes/${encodeURIComponent(backendAnimeId)}?language=${this.currentLang}`);
+            const response = await fetch(`${NEXUS_CONFIG.BACKEND_API}/episodes/${encodeURIComponent(backendAnimeName)}?language=${this.currentLang}`);
             const data = await response.json();
 
             if (data.success) {
+                this.currentBackendName = data.anime.name;
                 this.episodes = data.episodes;
                 this.displayEpisodeList();
             }
@@ -304,8 +305,8 @@ class AnimeNexus {
     }
 
     async playEpisode(episodeNum) {
-        if (!this.currentBackendId) {
-            console.error('No backend anime ID set');
+        if (!this.currentBackendName) {
+            console.error('No backend anime name set');
             return;
         }
 
@@ -316,7 +317,7 @@ class AnimeNexus {
 
             document.getElementById('video-engine').innerHTML = '<div class="loading">ESTABLISHING_STREAM...</div>';
 
-            const response = await fetch(`${NEXUS_CONFIG.BACKEND_API}/stream/${encodeURIComponent(this.currentBackendId)}/${episodeNum}?language=${this.currentLang}`);
+            const response = await fetch(`${NEXUS_CONFIG.BACKEND_API}/stream/${encodeURIComponent(this.currentBackendName)}/${episodeNum}?language=${this.currentLang}`);
             const data = await response.json();
 
             if (data.success && data.stream_url) {
@@ -348,7 +349,7 @@ class AnimeNexus {
         document.getElementById('server-list').innerHTML = '';
         document.getElementById('season-dropdown').innerHTML = '<option value="">SELECT_SEASON</option>';
         this.currentAnime = null;
-        this.currentBackendId = null;
+        this.currentBackendName = null;
         this.episodes = [];
     }
 
