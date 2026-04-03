@@ -78,6 +78,8 @@ class AnimeNexus {
         this.currentLang = 'sub';
         this.episodes = [];
         this.relatedSeasons = [];
+        this.episodePageSize = 100;      // Show 100 episodes per page
+        this.currentEpisodePage = 0;     // Current page index
         this.init();
     }
 
@@ -243,12 +245,22 @@ class AnimeNexus {
         try {
             document.getElementById('video-engine').innerHTML = '<div class="loading">SCANNING_FREQUENCIES...</div>';
             
-            const response = await fetch(`${NEXUS_CONFIG.BACKEND_API}/episodes/${encodeURIComponent(title)}?language=${this.currentLang}`);
+            // Use AbortController with 2 minute timeout for large anime
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 120000);
+            
+            const response = await fetch(
+                `${NEXUS_CONFIG.BACKEND_API}/episodes/${encodeURIComponent(title)}?language=${this.currentLang}`,
+                { signal: controller.signal }
+            );
+            clearTimeout(timeoutId);
+            
             const data = await response.json();
 
             if (data.success && data.episodes.length > 0) {
                 this.currentBackendName = data.anime.name;  // Store NAME, not ID
                 this.episodes = data.episodes;
+                this.currentEpisodePage = 0;  // Reset to first page
                 this.displayEpisodeList();
                 
                 // Auto-play first episode
@@ -258,7 +270,11 @@ class AnimeNexus {
             }
         } catch (error) {
             console.error('Backend search failed:', error);
-            this.showNoStreams(error.message);
+            if (error.name === 'AbortError') {
+                this.showNoStreams('Request timed out - try again');
+            } else {
+                this.showNoStreams(error.message);
+            }
         }
     }
 
@@ -297,11 +313,43 @@ class AnimeNexus {
             return;
         }
 
-        container.innerHTML = this.episodes.map(ep => `
+        // Pagination for large episode lists
+        const totalEps = this.episodes.length;
+        const pageSize = this.episodePageSize;
+        const totalPages = Math.ceil(totalEps / pageSize);
+        const startIdx = this.currentEpisodePage * pageSize;
+        const endIdx = Math.min(startIdx + pageSize, totalEps);
+        const pageEpisodes = this.episodes.slice(startIdx, endIdx);
+
+        let html = '';
+        
+        // Page selector for anime with many episodes
+        if (totalPages > 1) {
+            html += '<div class="ep-pagination" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;">';
+            for (let i = 0; i < totalPages; i++) {
+                const start = i * pageSize + 1;
+                const end = Math.min((i + 1) * pageSize, totalEps);
+                const active = i === this.currentEpisodePage ? 'active' : '';
+                html += `<button class="ep-page-btn ${active}" onclick="Nexus.setEpisodePage(${i})" style="font-size:0.6rem;padding:4px 8px;background:${active ? 'var(--accent)' : 'rgba(255,255,255,0.05)'};border:1px solid ${active ? 'var(--accent)' : 'rgba(255,255,255,0.1)'};color:${active ? '#000' : '#888'};cursor:pointer;">${start}-${end}</button>`;
+            }
+            html += '</div>';
+        }
+
+        // Episode buttons for current page
+        html += '<div class="ep-grid">';
+        html += pageEpisodes.map(ep => `
             <button class="ep-btn" onclick="Nexus.playEpisode(${ep.number})" data-ep="${ep.number}">
                 ${ep.number}
             </button>
         `).join('');
+        html += '</div>';
+
+        container.innerHTML = html;
+    }
+
+    setEpisodePage(pageNum) {
+        this.currentEpisodePage = pageNum;
+        this.displayEpisodeList();
     }
 
     async playEpisode(episodeNum) {
@@ -317,7 +365,16 @@ class AnimeNexus {
 
             document.getElementById('video-engine').innerHTML = '<div class="loading">ESTABLISHING_STREAM...</div>';
 
-            const response = await fetch(`${NEXUS_CONFIG.BACKEND_API}/stream/${encodeURIComponent(this.currentBackendName)}/${episodeNum}?language=${this.currentLang}`);
+            // Use AbortController with 90 second timeout
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 90000);
+
+            const response = await fetch(
+                `${NEXUS_CONFIG.BACKEND_API}/stream/${encodeURIComponent(this.currentBackendName)}/${episodeNum}?language=${this.currentLang}`,
+                { signal: controller.signal }
+            );
+            clearTimeout(timeoutId);
+            
             const data = await response.json();
 
             if (data.success && data.stream_url) {
@@ -332,15 +389,16 @@ class AnimeNexus {
                     <p style="color: var(--accent); font-size: 0.7rem; margin-top: 5px;">${data.resolution || 1080}p • ${this.currentLang.toUpperCase()}</p>
                 `;
             } else {
-                throw new Error('Stream not available');
+                throw new Error(data.error || 'Stream not available');
             }
         } catch (error) {
             console.error('Failed to load stream:', error);
+            const errMsg = error.name === 'AbortError' ? 'Request timed out - try again' : error.message;
             document.getElementById('video-engine').innerHTML = `
                 <div style="color: #ff3366; padding: 40px; text-align: center;">
                     <h3>⚠️ STREAM ERROR</h3>
                     <p>Episode ${episodeNum} could not be loaded</p>
-                    <p style="font-size: 12px; opacity: 0.7;">${error.message}</p>
+                    <p style="font-size: 12px; opacity: 0.7;">${errMsg}</p>
                 </div>
             `;
         }
