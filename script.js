@@ -75,6 +75,7 @@ class AnimeNexus {
     constructor() {
         this.currentAnime = null;       // AniList anime data
         this.currentBackendName = null; // Backend provider anime NAME (for API calls)
+        this.currentBackendId = null;   // Backend provider anime ID (for stream calls)
         this.currentLang = 'sub';
         this.episodes = [];
         this.relatedSeasons = [];
@@ -258,7 +259,8 @@ class AnimeNexus {
             const data = await response.json();
 
             if (data.success && data.episodes.length > 0) {
-                this.currentBackendName = data.anime.name;  // Store NAME, not ID
+                this.currentBackendName = data.anime.name;  // Store NAME
+                this.currentBackendId = data.anime.id;      // Store ID for streams
                 this.episodes = data.episodes;
                 this.currentEpisodePage = 0;  // Reset to first page
                 this.displayEpisodeList();
@@ -323,32 +325,51 @@ class AnimeNexus {
 
         let html = '';
         
-        // Page selector for anime with many episodes
+        // Page selector for anime with many episodes (rendered OUTSIDE the grid)
         if (totalPages > 1) {
-            html += '<div class="ep-pagination" style="display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;">';
+            // Remove existing pagination if any
+            const existingPagination = document.querySelector('.ep-pagination');
+            if (existingPagination) existingPagination.remove();
+            
+            // Create pagination div and insert BEFORE episode-list
+            const paginationDiv = document.createElement('div');
+            paginationDiv.className = 'ep-pagination';
+            paginationDiv.style.cssText = 'display:flex;gap:5px;flex-wrap:wrap;margin-bottom:10px;padding:5px 0;';
+            
             for (let i = 0; i < totalPages; i++) {
                 const start = i * pageSize + 1;
                 const end = Math.min((i + 1) * pageSize, totalEps);
-                const active = i === this.currentEpisodePage ? 'active' : '';
-                html += `<button class="ep-page-btn ${active}" onclick="Nexus.setEpisodePage(${i})" style="font-size:0.6rem;padding:4px 8px;background:${active ? 'var(--accent)' : 'rgba(255,255,255,0.05)'};border:1px solid ${active ? 'var(--accent)' : 'rgba(255,255,255,0.1)'};color:${active ? '#000' : '#888'};cursor:pointer;">${start}-${end}</button>`;
+                const isActive = i === this.currentEpisodePage;
+                const btn = document.createElement('button');
+                btn.className = `ep-page-btn ${isActive ? 'active' : ''}`;
+                btn.style.cssText = `font-size:0.55rem;padding:3px 6px;background:${isActive ? 'var(--accent)' : 'rgba(255,255,255,0.05)'};border:1px solid ${isActive ? 'var(--accent)' : 'rgba(255,255,255,0.1)'};color:${isActive ? '#000' : '#888'};cursor:pointer;border-radius:2px;`;
+                btn.textContent = `${start}-${end}`;
+                btn.onclick = () => this.setEpisodePage(i);
+                paginationDiv.appendChild(btn);
             }
-            html += '</div>';
+            
+            container.parentNode.insertBefore(paginationDiv, container);
         }
 
-        // Episode buttons for current page
-        html += '<div class="ep-grid">';
-        html += pageEpisodes.map(ep => `
+        // Episode buttons directly in the grid (container IS the ep-grid)
+        html = pageEpisodes.map(ep => `
             <button class="ep-btn" onclick="Nexus.playEpisode(${ep.number})" data-ep="${ep.number}">
                 ${ep.number}
             </button>
         `).join('');
-        html += '</div>';
 
         container.innerHTML = html;
     }
 
     setEpisodePage(pageNum) {
         this.currentEpisodePage = pageNum;
+        // Update active state on pagination buttons
+        document.querySelectorAll('.ep-page-btn').forEach((btn, idx) => {
+            btn.classList.toggle('active', idx === pageNum);
+            btn.style.background = idx === pageNum ? 'var(--accent)' : 'rgba(255,255,255,0.05)';
+            btn.style.borderColor = idx === pageNum ? 'var(--accent)' : 'rgba(255,255,255,0.1)';
+            btn.style.color = idx === pageNum ? '#000' : '#888';
+        });
         this.displayEpisodeList();
     }
 
@@ -369,8 +390,9 @@ class AnimeNexus {
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 90000);
 
+            // Use anime ID for stream request (more reliable than name)
             const response = await fetch(
-                `${NEXUS_CONFIG.BACKEND_API}/stream/${encodeURIComponent(this.currentBackendName)}/${episodeNum}?language=${this.currentLang}`,
+                `${NEXUS_CONFIG.BACKEND_API}/stream-by-id/${encodeURIComponent(this.currentBackendId)}/${episodeNum}?language=${this.currentLang}`,
                 { signal: controller.signal }
             );
             clearTimeout(timeoutId);
@@ -410,9 +432,14 @@ class AnimeNexus {
         document.getElementById('episode-list').innerHTML = '';
         document.getElementById('server-list').innerHTML = '';
         document.getElementById('season-dropdown').innerHTML = '<option value="">SELECT_SEASON</option>';
+        // Remove pagination if exists
+        const pagination = document.querySelector('.ep-pagination');
+        if (pagination) pagination.remove();
         this.currentAnime = null;
         this.currentBackendName = null;
+        this.currentBackendId = null;
         this.episodes = [];
+        this.currentEpisodePage = 0;
     }
 
     stripHTML(html) {
