@@ -124,3 +124,68 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-mono);
 .details-desc { font-size: 0.9rem; color: var(--text-dim); line-height: 1.6; max-height: 200px; overflow-y: auto; }
 
 .loading { color: var(--accent); text-align: center; padding: 2rem; font-size: 0.8rem; }
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+    .nexus-nav {
+        flex-wrap: wrap;
+        padding: 0.8rem 3%;
+        gap: 0.5rem;
+    }
+    
+    .back-btn {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.7rem;
+    }
+    
+    .logo {
+        font-size: 0.9rem;
+    }
+    
+    .search-bar {
+        order: 3;
+        width: 100%;
+        max-width: 100%;
+        margin-top: 0.5rem;
+    }
+    
+    .search-bar input {
+        padding: 0.5rem 0.8rem;
+        font-size: 0.75rem;
+    }
+    
+    .search-bar button {
+        padding: 0 1rem;
+        font-size: 0.75rem;
+    }
+    
+    .anime-grid {
+        grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+        gap: 0.8rem;
+        padding: 1rem 3%;
+    }
+    
+    .player-overlay {
+        padding: 1rem;
+    }
+    
+    .player-content {
+        max-width: 100%;
+        padding: 1rem;
+    }
+    
+    .details-title {
+        font-size: 1.5rem;
+    }
+    
+    .details-desc {
+        font-size: 0.8rem;
+    }
+    
+    .close-btn {
+        top: 1rem;
+        right: 1rem;
+        padding: 0.4rem 0.8rem;
+        font-size: 0.65rem;
+    }
+}
