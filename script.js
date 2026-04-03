@@ -321,11 +321,15 @@ class AnimeNexus {
             const data = await response.json();
 
             if (data.success && data.stream_url) {
+                // Use proxy to bypass referrer restrictions
+                const proxyUrl = `${NEXUS_CONFIG.BACKEND_API}/proxy?url=${encodeURIComponent(data.stream_url)}&referer=${encodeURIComponent(data.referrer || 'https://allanime.day')}`;
+                
                 document.getElementById('video-engine').innerHTML = `
                     <video controls autoplay style="width: 100%; height: 100%; background: #000;">
-                        <source src="${data.stream_url}" type="video/mp4">
+                        <source src="${proxyUrl}" type="video/mp4">
                         Your browser does not support HTML5 video.
                     </video>
+                    <p style="color: var(--accent); font-size: 0.7rem; margin-top: 5px;">${data.resolution || 1080}p • ${this.currentLang.toUpperCase()}</p>
                 `;
             } else {
                 throw new Error('Stream not available');
