@@ -1,6 +1,6 @@
 /**
- * ANIME//NEXUS - Protocol v28.0 (ANIPY-API BACKEND)
- * Uses Railway backend with anipy-api for REAL working streams
+ * ANIME//NEXUS - Protocol v29.0 (ANIPY-API BACKEND)
+ * Full-featured anime streaming with season, language, and episode selectors
  */
 
 const NEXUS_CONFIG = {
@@ -54,15 +54,30 @@ const query = {
             format
             season
             seasonYear
+            relations {
+                edges {
+                    relationType
+                    node {
+                        id
+                        title { romaji english }
+                        format
+                        episodes
+                        status
+                        seasonYear
+                    }
+                }
+            }
         }
     }`
 };
 
 class AnimeNexus {
     constructor() {
-        this.currentAnime = null;
+        this.currentAnime = null;       // AniList anime data
+        this.currentBackendId = null;   // Backend provider anime ID
         this.currentLang = 'sub';
         this.episodes = [];
+        this.relatedSeasons = [];
         this.init();
     }
 
@@ -71,6 +86,13 @@ class AnimeNexus {
         document.getElementById('search-btn').addEventListener('click', () => this.search());
         document.getElementById('main-search').addEventListener('keypress', (e) => {
             if (e.key === 'Enter') this.search();
+        });
+        
+        // Season dropdown listener
+        document.getElementById('season-dropdown').addEventListener('change', (e) => {
+            if (e.target.value) {
+                this.open(parseInt(e.target.value));
+            }
         });
     }
 
@@ -125,6 +147,14 @@ class AnimeNexus {
 
     async open(anilistId) {
         try {
+            // Show loading state
+            document.getElementById('player-overlay').classList.add('active');
+            document.getElementById('display-title').textContent = 'LOADING...';
+            document.getElementById('display-desc').textContent = 'Connecting to stream...';
+            document.getElementById('video-engine').innerHTML = '<div class="loading">ESTABLISHING_LINK...</div>';
+            document.getElementById('episode-list').innerHTML = '';
+            document.getElementById('server-list').innerHTML = '';
+
             // Get anime details from AniList
             const response = await fetch(NEXUS_CONFIG.ANILIST, {
                 method: 'POST',
@@ -137,82 +167,163 @@ class AnimeNexus {
             const { data } = await response.json();
             this.currentAnime = data.Media;
 
-            // Show overlay
-            document.getElementById('player-overlay').classList.add('active');
-            document.getElementById('display-title').textContent = this.currentAnime.title.romaji;
+            // Update UI
+            document.getElementById('display-title').textContent = this.currentAnime.title.romaji || this.currentAnime.title.english;
             document.getElementById('display-desc').textContent = this.stripHTML(this.currentAnime.description || 'No description available');
 
+            // Populate seasons dropdown
+            this.populateSeasons();
+
+            // Populate language/server selector
+            this.populateServers();
+
             // Search backend for this anime
-            await this.searchBackend(this.currentAnime.title.romaji);
+            await this.searchBackend(this.currentAnime.title.romaji || this.currentAnime.title.english);
         } catch (error) {
             console.error('Failed to open anime:', error);
-            alert('Failed to load anime');
+            document.getElementById('video-engine').innerHTML = `
+                <div style="color: #ff3366; padding: 40px; text-align: center;">
+                    <h3>⚠️ CONNECTION FAILED</h3>
+                    <p>${error.message}</p>
+                </div>
+            `;
+        }
+    }
+
+    populateSeasons() {
+        const dropdown = document.getElementById('season-dropdown');
+        dropdown.innerHTML = '<option value="">SELECT_SEASON</option>';
+
+        // Add current anime
+        const currentOption = document.createElement('option');
+        currentOption.value = this.currentAnime.id;
+        currentOption.textContent = `${this.currentAnime.title.romaji} (${this.currentAnime.seasonYear || 'N/A'})`;
+        currentOption.selected = true;
+        dropdown.appendChild(currentOption);
+
+        // Add related seasons (sequels, prequels, etc.)
+        if (this.currentAnime.relations && this.currentAnime.relations.edges) {
+            const relatedAnime = this.currentAnime.relations.edges
+                .filter(edge => ['SEQUEL', 'PREQUEL', 'PARENT', 'SIDE_STORY'].includes(edge.relationType))
+                .filter(edge => edge.node.format === 'TV' || edge.node.format === 'OVA')
+                .sort((a, b) => (a.node.seasonYear || 0) - (b.node.seasonYear || 0));
+
+            relatedAnime.forEach(edge => {
+                const option = document.createElement('option');
+                option.value = edge.node.id;
+                option.textContent = `${edge.node.title.romaji || edge.node.title.english} (${edge.node.seasonYear || edge.relationType})`;
+                dropdown.appendChild(option);
+            });
+        }
+    }
+
+    populateServers() {
+        const container = document.getElementById('server-list');
+        container.innerHTML = `
+            <button class="server-btn ${this.currentLang === 'sub' ? 'active' : ''}" onclick="Nexus.setLanguage('sub')">
+                SUB
+            </button>
+            <button class="server-btn ${this.currentLang === 'dub' ? 'active' : ''}" onclick="Nexus.setLanguage('dub')">
+                DUB
+            </button>
+        `;
+    }
+
+    setLanguage(lang) {
+        this.currentLang = lang;
+        this.populateServers();
+        
+        // Reload episodes with new language
+        if (this.currentBackendId) {
+            this.loadEpisodes(this.currentBackendId);
         }
     }
 
     async searchBackend(title) {
         try {
-            const response = await fetch(`${NEXUS_CONFIG.BACKEND_API}/search?q=${encodeURIComponent(title)}`);
+            document.getElementById('video-engine').innerHTML = '<div class="loading">SCANNING_FREQUENCIES...</div>';
+            
+            const response = await fetch(`${NEXUS_CONFIG.BACKEND_API}/episodes/${encodeURIComponent(title)}?language=${this.currentLang}`);
             const data = await response.json();
 
-            if (data.success && data.results.length > 0) {
-                // Use first result
-                const anime = data.results[0];
-                await this.loadEpisodes(anime.id);
+            if (data.success && data.episodes.length > 0) {
+                this.currentBackendId = data.anime.id;
+                this.episodes = data.episodes;
+                this.displayEpisodeList();
+                
+                // Auto-play first episode
+                this.playEpisode(1);
             } else {
-                document.getElementById('video-engine').innerHTML = `
-                    <div style="color: #ff3366; padding: 40px; text-align: center;">
-                        <h3>⚠️ NO STREAMS FOUND</h3>
-                        <p>This anime is not available on the streaming providers</p>
-                    </div>
-                `;
+                this.showNoStreams();
             }
         } catch (error) {
             console.error('Backend search failed:', error);
-            alert('Backend is unavailable');
+            this.showNoStreams(error.message);
         }
     }
 
-    async loadEpisodes(animeId) {
+    showNoStreams(errorMsg = null) {
+        document.getElementById('video-engine').innerHTML = `
+            <div style="color: #ff3366; padding: 40px; text-align: center;">
+                <h3>⚠️ NO STREAMS FOUND</h3>
+                <p>${errorMsg || 'This anime is not available on the streaming provider'}</p>
+                <p style="font-size: 12px; opacity: 0.7; margin-top: 10px;">Try a different language or check back later</p>
+            </div>
+        `;
+        document.getElementById('episode-list').innerHTML = '<p style="color: #666; padding: 10px;">No episodes available</p>';
+    }
+
+    async loadEpisodes(backendAnimeId) {
         try {
-            const response = await fetch(`${NEXUS_CONFIG.BACKEND_API}/episodes/${animeId}?lang=${this.currentLang}`);
+            const response = await fetch(`${NEXUS_CONFIG.BACKEND_API}/episodes/${encodeURIComponent(backendAnimeId)}?language=${this.currentLang}`);
             const data = await response.json();
 
             if (data.success) {
                 this.episodes = data.episodes;
-                this.displayEpisodeList(animeId);
-                
-                // Auto-play first episode
-                if (this.episodes.length > 0) {
-                    this.playEpisode(animeId, 1);
-                }
+                this.displayEpisodeList();
             }
         } catch (error) {
             console.error('Failed to load episodes:', error);
         }
     }
 
-    displayEpisodeList(animeId) {
+    displayEpisodeList() {
         const container = document.getElementById('episode-list');
         if (!container) return;
 
+        if (this.episodes.length === 0) {
+            container.innerHTML = '<p style="color: #666; padding: 10px;">No episodes found</p>';
+            return;
+        }
+
         container.innerHTML = this.episodes.map(ep => `
-            <button class="ep-btn" onclick="Nexus.playEpisode('${animeId}', ${ep.number})">
-                EP ${ep.number}
+            <button class="ep-btn" onclick="Nexus.playEpisode(${ep.number})" data-ep="${ep.number}">
+                ${ep.number}
             </button>
         `).join('');
     }
 
-    async playEpisode(animeId, episodeNum) {
+    async playEpisode(episodeNum) {
+        if (!this.currentBackendId) {
+            console.error('No backend anime ID set');
+            return;
+        }
+
         try {
-            const response = await fetch(`${NEXUS_CONFIG.BACKEND_API}/stream/${animeId}/${episodeNum}?lang=${this.currentLang}`);
+            // Highlight active episode
+            document.querySelectorAll('.ep-btn').forEach(btn => btn.classList.remove('active'));
+            document.querySelector(`.ep-btn[data-ep="${episodeNum}"]`)?.classList.add('active');
+
+            document.getElementById('video-engine').innerHTML = '<div class="loading">ESTABLISHING_STREAM...</div>';
+
+            const response = await fetch(`${NEXUS_CONFIG.BACKEND_API}/stream/${encodeURIComponent(this.currentBackendId)}/${episodeNum}?language=${this.currentLang}`);
             const data = await response.json();
 
-            if (data.success) {
+            if (data.success && data.stream_url) {
                 document.getElementById('video-engine').innerHTML = `
-                    <video controls autoplay style="width: 100%; height: 100%;">
+                    <video controls autoplay style="width: 100%; height: 100%; background: #000;">
                         <source src="${data.stream_url}" type="video/mp4">
-                        Your browser does not support the video tag.
+                        Your browser does not support HTML5 video.
                     </video>
                 `;
             } else {
@@ -223,7 +334,8 @@ class AnimeNexus {
             document.getElementById('video-engine').innerHTML = `
                 <div style="color: #ff3366; padding: 40px; text-align: center;">
                     <h3>⚠️ STREAM ERROR</h3>
-                    <p>${error.message}</p>
+                    <p>Episode ${episodeNum} could not be loaded</p>
+                    <p style="font-size: 12px; opacity: 0.7;">${error.message}</p>
                 </div>
             `;
         }
@@ -232,7 +344,11 @@ class AnimeNexus {
     close() {
         document.getElementById('player-overlay').classList.remove('active');
         document.getElementById('video-engine').innerHTML = '';
+        document.getElementById('episode-list').innerHTML = '';
+        document.getElementById('server-list').innerHTML = '';
+        document.getElementById('season-dropdown').innerHTML = '<option value="">SELECT_SEASON</option>';
         this.currentAnime = null;
+        this.currentBackendId = null;
         this.episodes = [];
     }
 

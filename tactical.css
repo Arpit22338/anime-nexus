@@ -89,11 +89,16 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-mono);
 
 /* Station Buttons */
 .station-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; }
-.station-btn {
+.station-btn, .server-btn {
     background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.08);
-    color: var(--text-dim); font-size: 0.6rem; padding: 0.6rem; cursor: pointer;
+    color: var(--text-dim); font-size: 0.7rem; padding: 0.7rem; cursor: pointer;
+    font-family: var(--font-mono); transition: all 0.2s;
 }
-.station-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(0, 255, 159, 0.1); }
+.station-btn:hover, .server-btn:hover { border-color: var(--accent); color: var(--accent); }
+.station-btn.active, .server-btn.active { 
+    border-color: var(--accent); color: var(--bg); 
+    background: var(--accent); font-weight: 700;
+}
 
 .close-btn {
     position: absolute; top: 1.5rem; right: 2rem; background: var(--secondary);
