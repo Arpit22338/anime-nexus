@@ -157,6 +157,9 @@ class AnimeNexus {
             document.getElementById('video-engine').innerHTML = '<div class="loading">ESTABLISHING_LINK...</div>';
             document.getElementById('episode-list').innerHTML = '';
             document.getElementById('server-list').innerHTML = '';
+            
+            // Show back button when player opens
+            document.getElementById('back-btn').style.display = 'block';
 
             // Get anime details from AniList
             const response = await fetch(NEXUS_CONFIG.ANILIST, {
@@ -435,11 +438,17 @@ class AnimeNexus {
         // Remove pagination if exists
         const pagination = document.querySelector('.ep-pagination');
         if (pagination) pagination.remove();
+        // Hide back button
+        document.getElementById('back-btn').style.display = 'none';
         this.currentAnime = null;
         this.currentBackendName = null;
         this.currentBackendId = null;
         this.episodes = [];
         this.currentEpisodePage = 0;
+    }
+
+    goBack() {
+        this.close();
     }
 
     stripHTML(html) {

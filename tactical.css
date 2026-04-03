@@ -19,7 +19,20 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-mono);
     padding: 1rem 5%; background: var(--surface);
     border-bottom: 1px solid rgba(255,255,255,0.05);
     position: sticky; top: 0; z-index: 1000;
+    gap: 1rem;
 }
+
+.back-btn {
+    background: var(--accent); color: var(--bg); 
+    border: none; padding: 0.6rem 1rem; 
+    font-family: var(--font-mono); font-weight: 700; 
+    cursor: pointer; border-radius: 4px; font-size: 0.8rem;
+    transition: all 0.2s;
+}
+.back-btn:hover {
+    background: #00cc7f; transform: translateX(-3px);
+}
+
 .logo { font-family: var(--font-main); font-weight: 800; color: var(--accent); letter-spacing: -1px; }
 
 .search-bar {
