@@ -508,21 +508,49 @@ class AnimeNexus {
         try {
             document.getElementById('video-engine').innerHTML = '<div class="loading">SCANNING_FREQUENCIES...</div>';
             
-            // Backend now handles provider ID matching - just send the title
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 120000);
+            const timeoutId = setTimeout(() => controller.abort(), 90000);
             
-            const response = await fetch(
-                `${NEXUS_CONFIG.BACKEND_API}/episodes/${encodeURIComponent(title)}?language=${this.currentLang}`,
-                { signal: controller.signal }
-            );
-            clearTimeout(timeoutId);
+            // Try to get provider ID from AniList ID mapping first (instant)
+            let providerId = null;
+            if (this.currentAnime && this.currentAnime.id) {
+                try {
+                    const lookupResp = await fetch(
+                        `${NEXUS_CONFIG.BACKEND_API}/lookup/${this.currentAnime.id}`,
+                        { signal: controller.signal }
+                    );
+                    const lookupData = await lookupResp.json();
+                    if (lookupData.mapped && lookupData.provider_id) {
+                        providerId = lookupData.provider_id;
+                    }
+                } catch (e) {
+                    console.log('Lookup failed, falling back to search');
+                }
+            }
             
-            const data = await response.json();
+            let data;
+            if (providerId) {
+                // Use direct episodes-by-id endpoint (faster)
+                const response = await fetch(
+                    `${NEXUS_CONFIG.BACKEND_API}/episodes-by-id/${encodeURIComponent(providerId)}?language=${this.currentLang}`,
+                    { signal: controller.signal }
+                );
+                clearTimeout(timeoutId);
+                data = await response.json();
+                data.anime = { name: title, id: providerId };
+            } else {
+                // Fallback to title-based search
+                const response = await fetch(
+                    `${NEXUS_CONFIG.BACKEND_API}/episodes/${encodeURIComponent(title)}?language=${this.currentLang}`,
+                    { signal: controller.signal }
+                );
+                clearTimeout(timeoutId);
+                data = await response.json();
+            }
 
-            if (data.success && data.episodes.length > 0) {
+            if (data.success && data.episodes && data.episodes.length > 0) {
                 this.currentBackendName = data.anime.name;
-                this.currentBackendId = data.anime.id;
+                this.currentBackendId = data.anime.id || data.anime_id;
                 this.episodes = data.episodes;
                 this.currentEpisodePage = 0;
                 this.displayEpisodeList();
@@ -557,11 +585,17 @@ class AnimeNexus {
 
     async loadEpisodes(backendAnimeName) {
         try {
-            const response = await fetch(`${NEXUS_CONFIG.BACKEND_API}/episodes/${encodeURIComponent(backendAnimeName)}?language=${this.currentLang}`);
+            // Use episodes-by-id if we have the provider ID (faster)
+            let response;
+            if (this.currentBackendId) {
+                response = await fetch(`${NEXUS_CONFIG.BACKEND_API}/episodes-by-id/${encodeURIComponent(this.currentBackendId)}?language=${this.currentLang}`);
+            } else {
+                response = await fetch(`${NEXUS_CONFIG.BACKEND_API}/episodes/${encodeURIComponent(backendAnimeName)}?language=${this.currentLang}`);
+            }
             const data = await response.json();
 
             if (data.success) {
-                this.currentBackendName = data.anime.name;
+                if (data.anime) this.currentBackendName = data.anime.name;
                 this.episodes = data.episodes;
                 this.displayEpisodeList();
             }
