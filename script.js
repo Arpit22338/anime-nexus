@@ -1,11 +1,11 @@
 /**
- * ANIME//NEXUS - Protocol v29.0 (ANIPY-API BACKEND)
+ * ANIME//NEXUS - Protocol v30.0 (AZURE BACKEND)
  * Full-featured anime streaming with season, language, and episode selectors
  */
 
 const NEXUS_CONFIG = {
     ANILIST: 'https://graphql.anilist.co/',
-    BACKEND_API: 'https://web-production-9bda3.up.railway.app/api'
+    BACKEND_API: 'https://anime-nexus-api.livelyisland-018542b8.southeastasia.azurecontainerapps.io/api'
 };
 
 const query = {
