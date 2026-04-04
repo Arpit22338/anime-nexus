@@ -3,14 +3,36 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ANIME//NEXUS</title>
+    <title>ANI//NEXUS - Free Anime Streaming</title>
+    
+    <!-- SEO Meta Tags -->
+    <meta name="description" content="ANI//NEXUS - Stream your favorite anime for free. Watch subbed and dubbed anime in HD quality with a sleek cyberpunk interface.">
+    <meta name="keywords" content="anime, streaming, free anime, watch anime, subbed, dubbed, ani nexus">
+    <meta name="author" content="ANI//NEXUS">
+    <meta name="robots" content="index, follow">
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="ANI//NEXUS - Free Anime Streaming">
+    <meta property="og:description" content="Stream your favorite anime for free in HD quality with a sleek cyberpunk interface.">
+    <meta property="og:image" content="/favicon.png">
+    <meta property="og:url" content="https://ani-nexus.vercel.app">
+    
+    <!-- Twitter Card -->
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="ANI//NEXUS - Free Anime Streaming">
+    <meta name="twitter:description" content="Stream your favorite anime for free in HD quality.">
+    
+    <!-- Favicon -->
+    <link rel="icon" type="image/png" href="/favicon.png">
+    
     <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="tactical.css">
 </head>
 <body>
     <nav class="nexus-nav">
         <button id="back-btn" class="back-btn" onclick="Nexus.goBack()" style="display:none;">← BACK</button>
-        <div class="logo">ANIME//NEXUS</div>
+        <div class="logo">ANI//NEXUS</div>
         <div class="search-bar">
             <input type="text" id="main-search" placeholder="BROADCAST_SEARCH...">
             <button id="search-btn">SCAN</button>
@@ -21,6 +43,22 @@
         <h2 class="section-title">ACTIVE_FREQUENCIES</h2>
         <div class="anime-grid" id="trending-grid">
             <!-- Cards injected here -->
+        </div>
+    </main>
+
+    <!-- Favorites View (hidden by default) -->
+    <main id="favorites-view" style="display:none;">
+        <h2 class="section-title">FAVORITES_ARCHIVE</h2>
+        <div class="anime-grid" id="favorites-grid">
+            <!-- Favorite cards injected here -->
+        </div>
+    </main>
+
+    <!-- Continue Watching View (hidden by default) -->
+    <main id="continue-view" style="display:none;">
+        <h2 class="section-title">CONTINUE_TRANSMISSION</h2>
+        <div class="anime-grid" id="continue-grid">
+            <!-- Continue watching cards injected here -->
         </div>
     </main>
 
@@ -65,6 +103,22 @@
             </div>
         </div>
     </div>
+
+    <!-- Bottom Navigation Bar -->
+    <nav class="bottom-nav" id="bottom-nav">
+        <button class="nav-tab active" data-tab="home" onclick="Nexus.showTab('home')">
+            <span class="nav-icon">⌂</span>
+            <span class="nav-label">HOME</span>
+        </button>
+        <button class="nav-tab" data-tab="favorites" onclick="Nexus.showTab('favorites')">
+            <span class="nav-icon">♥</span>
+            <span class="nav-label">FAVORITES</span>
+        </button>
+        <button class="nav-tab" data-tab="continue" onclick="Nexus.showTab('continue')">
+            <span class="nav-icon">▶</span>
+            <span class="nav-label">CONTINUE</span>
+        </button>
+    </nav>
 
     <script src="script.js"></script>
 </body>
