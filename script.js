@@ -415,26 +415,10 @@ class AnimeNexus {
                 const proxyUrl = `${NEXUS_CONFIG.BACKEND_API}/proxy?url=${encodeURIComponent(data.stream_url)}&referer=${encodeURIComponent(data.referrer || 'https://allanime.day')}`;
                 
                 document.getElementById('video-engine').innerHTML = `
-                    <div style="position:relative;">
-                        <video id="nexus-video" controls autoplay crossorigin="anonymous" style="width: 100%; height: 100%; background: #000;">
-                            <source src="${proxyUrl}" type="video/mp4">
-                            Your browser does not support HTML5 video.
-                        </video>
-                        <div style="margin-top:10px;display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
-                            <p style="color: var(--accent); font-size: 0.7rem; flex:1;">${data.resolution || 1080}p • ${this.currentLang.toUpperCase()}</p>
-                            ${this.currentLang === 'sub' ? '<button onclick="Nexus.toggleSubtitles()" class="control-btn" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:5px 10px;cursor:pointer;border-radius:3px;font-size:0.65rem;">CC</button>' : ''}
-                            <select onchange="Nexus.changeSpeed(this.value)" class="control-btn" style="background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.2);color:#fff;padding:5px 8px;cursor:pointer;border-radius:3px;font-size:0.65rem;">
-                                <option value="0.5">0.5x</option>
-                                <option value="0.75">0.75x</option>
-                                <option value="1" selected>1x</option>
-                                <option value="1.25">1.25x</option>
-                                <option value="1.5">1.5x</option>
-                                <option value="2">2x</option>
-                            </select>
-                            <a href="${proxyUrl}" download="episode-${episodeNum}.mp4" class="control-btn" style="background:var(--accent);color:#000;padding:5px 10px;text-decoration:none;border-radius:3px;font-size:0.65rem;font-weight:700;">⬇ DOWNLOAD</a>
-                        </div>
-                    </div>
-                    <p style="color: var(--accent); font-size: 0.7rem; margin-top: 5px;">${data.resolution || 1080}p • ${this.currentLang.toUpperCase()}</p>
+                    <video id="nexus-video" controls autoplay crossorigin="anonymous" style="width: 100%; height: 100%; background: #000;">
+                        <source src="${proxyUrl}" type="video/mp4">
+                        Your browser does not support HTML5 video.
+                    </video>
                 `;
             } else {
                 throw new Error(data.error || 'Stream not available');
