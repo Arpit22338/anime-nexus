@@ -97,6 +97,84 @@ class AnimeNexus {
                 this.open(parseInt(e.target.value));
             }
         });
+
+        // Handle browser back/forward buttons
+        window.addEventListener('popstate', () => {
+            const params = new URLSearchParams(window.location.search);
+            const id = params.get('id');
+            if (id && window.location.pathname.includes('animeplayer')) {
+                // Don't re-open if same anime
+                if (!this.currentAnime || this.currentAnime.id !== parseInt(id)) {
+                    this.openWithoutPush(parseInt(id));
+                }
+            } else {
+                // Going back to home
+                this.closeWithoutPush();
+            }
+        });
+
+        // Restore state from URL on page load
+        const params = new URLSearchParams(window.location.search);
+        const id = params.get('id');
+        if (id && window.location.pathname.includes('animeplayer')) {
+            this.openWithoutPush(parseInt(id));
+        }
+    }
+
+    // Open without pushing to history (for popstate/refresh)
+    async openWithoutPush(anilistId) {
+        try {
+            document.getElementById('player-overlay').classList.add('active');
+            document.getElementById('display-title').textContent = 'LOADING...';
+            document.getElementById('display-desc').textContent = 'Connecting to stream...';
+            document.getElementById('video-engine').innerHTML = '<div class="loading">ESTABLISHING_LINK...</div>';
+            document.getElementById('episode-list').innerHTML = '';
+            document.getElementById('server-list').innerHTML = '';
+            document.getElementById('back-btn').style.display = 'block';
+
+            const response = await fetch(NEXUS_CONFIG.ANILIST, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    query: query.details,
+                    variables: { id: anilistId }
+                })
+            });
+            const { data } = await response.json();
+            this.currentAnime = data.Media;
+
+            document.getElementById('display-title').textContent = this.currentAnime.title.romaji || this.currentAnime.title.english;
+            document.getElementById('display-desc').textContent = this.stripHTML(this.currentAnime.description || 'No description available');
+
+            this.populateSeasons();
+            this.populateServers();
+            await this.searchBackend(this.currentAnime.title.romaji || this.currentAnime.title.english);
+        } catch (error) {
+            console.error('Failed to open anime:', error);
+            document.getElementById('video-engine').innerHTML = `
+                <div style="color: #ff3366; padding: 40px; text-align: center;">
+                    <h3>⚠️ CONNECTION FAILED</h3>
+                    <p>${error.message}</p>
+                </div>
+            `;
+        }
+    }
+
+    // Close without pushing to history (for popstate)
+    closeWithoutPush() {
+        document.getElementById('player-overlay').classList.remove('active');
+        document.getElementById('video-engine').innerHTML = '';
+        document.getElementById('episode-list').innerHTML = '';
+        document.getElementById('server-list').innerHTML = '';
+        document.getElementById('season-dropdown').innerHTML = '<option value="">SELECT_SEASON</option>';
+        const pagination = document.querySelector('.ep-pagination');
+        if (pagination) pagination.remove();
+        document.getElementById('back-btn').style.display = 'none';
+        this.currentAnime = null;
+        this.currentBackendName = null;
+        this.currentBackendId = null;
+        this.episodes = [];
+        this.currentEpisodePage = 0;
     }
 
     async loadTrending() {
@@ -441,24 +519,15 @@ class AnimeNexus {
     }
 
     close() {
-        // Reset URL to home
+        // Use history.back() to properly trigger popstate
+        // This ensures mobile back button behavior matches
+        window.history.back();
+    }
+
+    // Actual close logic - called from closeWithoutPush or directly
+    doClose() {
         window.history.pushState({}, '', '/');
-        
-        document.getElementById('player-overlay').classList.remove('active');
-        document.getElementById('video-engine').innerHTML = '';
-        document.getElementById('episode-list').innerHTML = '';
-        document.getElementById('server-list').innerHTML = '';
-        document.getElementById('season-dropdown').innerHTML = '<option value="">SELECT_SEASON</option>';
-        // Remove pagination if exists
-        const pagination = document.querySelector('.ep-pagination');
-        if (pagination) pagination.remove();
-        // Hide back button
-        document.getElementById('back-btn').style.display = 'none';
-        this.currentAnime = null;
-        this.currentBackendName = null;
-        this.currentBackendId = null;
-        this.episodes = [];
-        this.currentEpisodePage = 0;
+        this.closeWithoutPush();
     }
 
     goBack() {
