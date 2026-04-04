@@ -9,27 +9,6 @@ const NEXUS_CONFIG = {
     BACKEND_API: 'https://anime-nexus-api.livelyisland-018542b8.southeastasia.azurecontainerapps.io/api'
 };
 
-// Hardcoded provider ID mappings for popular anime that get mismatched
-const PROVIDER_ID_MAP = {
-    'one piece': 'one-piece',
-    'naruto': 'naruto',
-    'naruto shippuden': 'naruto-shippuden',
-    'bleach': 'bleach',
-    'dragon ball z': 'dragon-ball-z',
-    'dragon ball': 'dragon-ball',
-    'attack on titan': 'shingeki-no-kyojin',
-    'demon slayer': 'kimetsu-no-yaiba',
-    'jujutsu kaisen': 'jujutsu-kaisen',
-    'my hero academia': 'boku-no-hero-academia',
-    'hunter x hunter': 'hunter-x-hunter-2011',
-    'death note': 'death-note',
-    'fullmetal alchemist brotherhood': 'fullmetal-alchemist-brotherhood',
-    'one punch man': 'one-punch-man',
-    'spy x family': 'spy-x-family',
-    'chainsaw man': 'chainsaw-man',
-    'solo leveling': 'ore-dake-level-up-na-ken'
-};
-
 // Known sequels that should redirect to Season 1
 const SEQUEL_TO_SEASON1 = {
     // AniList ID of sequel -> AniList ID of Season 1
@@ -529,24 +508,12 @@ class AnimeNexus {
         try {
             document.getElementById('video-engine').innerHTML = '<div class="loading">SCANNING_FREQUENCIES...</div>';
             
-            // Check for hardcoded provider ID first
-            const titleLower = title.toLowerCase();
-            let searchTitle = title;
-            let useDirectId = false;
-            
-            for (const [key, providerId] of Object.entries(PROVIDER_ID_MAP)) {
-                if (titleLower.includes(key) || key.includes(titleLower)) {
-                    searchTitle = providerId;
-                    useDirectId = true;
-                    break;
-                }
-            }
-            
+            // Backend now handles provider ID matching - just send the title
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 120000);
             
             const response = await fetch(
-                `${NEXUS_CONFIG.BACKEND_API}/episodes/${encodeURIComponent(searchTitle)}?language=${this.currentLang}`,
+                `${NEXUS_CONFIG.BACKEND_API}/episodes/${encodeURIComponent(title)}?language=${this.currentLang}`,
                 { signal: controller.signal }
             );
             clearTimeout(timeoutId);
