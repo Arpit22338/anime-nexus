@@ -687,13 +687,16 @@ class AnimeNexus {
             const data = await response.json();
 
             if (data.success && data.stream_url) {
-                const proxyUrl = `${NEXUS_CONFIG.BACKEND_API}/proxy?url=${encodeURIComponent(data.stream_url)}&referer=${encodeURIComponent(data.referrer || 'https://allanime.day')}`;
-                
+                // Stream URLs from Anitaku are embed URLs - use iframe
                 document.getElementById('video-engine').innerHTML = `
-                    <video id="nexus-video" controls autoplay crossorigin="anonymous" style="width: 100%; height: 100%; background: #000;">
-                        <source src="${proxyUrl}" type="video/mp4">
-                        Your browser does not support HTML5 video.
-                    </video>
+                    <iframe 
+                        src="${data.stream_url}" 
+                        allowfullscreen="true" 
+                        frameborder="0" 
+                        scrolling="no"
+                        allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                        style="width: 100%; height: 100%; border: none;"
+                    ></iframe>
                 `;
                 
                 // Save watch progress
