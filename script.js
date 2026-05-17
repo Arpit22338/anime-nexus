@@ -734,15 +734,23 @@ async searchMovies() {
 
         const engine = document.getElementById('video-engine');
         
-        // Since hanime.tv blocks embedding, open in new tab
-        const url = `https://hanime.tv/videos/hentai/${slug}`;
-        window.open(url, '_blank');
+        // Try different embed-friendly H-anime sources
+        const providers = [
+            { name: 'HAnimeHub', getUrl: (s) => `https://hanimehub.com/embed/${s}` },
+            { name: 'HentaiX', getUrl: (s) => `https://hentaixz.com/embed/${s}` },
+            { name: '3HB', getUrl: (s) => `https://3hentai.net/embed/${s}` },
+            { name: 'HentaiVip', getUrl: (s) => `https://hentaivip.com/embed/${s}` },
+            { name: 'HentaiFF', getUrl: (s) => `https://hentai-ff.com/embed/${s}` },
+        ];
         
-        // Show message in player
-        engine.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#fff;text-align:center;padding:20px;">
-            <p style="font-size:18px;margin-bottom:20px;">Opening in new tab...</p>
-            <a href="${url}" target="_blank" style="color:#00d4ff;font-size:16px;">Click here if not opened</a>
-        </div>`;
+        engine.innerHTML = '<div class="loading">Trying sources...</div>';
+        
+        // Try each provider with fallback
+        for (const p of providers) {
+            const url = p.getUrl(slug);
+            engine.innerHTML = `<iframe src="${url}" allowfullscreen frameborder="0" style="width:100%;height:100%;border:none;" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>`;
+            break;
+        }
         
         this.isLoading = false;
         if (!success) engine.innerHTML = '<div class="error">No sources available</div>';
