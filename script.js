@@ -432,11 +432,15 @@ const viewMap = {
     loadFavorites() {
         const grid = document.getElementById('favorites-grid');
         const favs = this.getFavorites();
+        const progress = this.getWatchProgress();
         if (favs.length === 0) { grid.innerHTML = '<div class="empty-state">No favorites yet.</div>'; return; }
-        grid.innerHTML = favs.map(f => `<div class="anime-card" onclick="Nexus.open(${f.id})">
-            <div class="card-media"><img src="${f.image}" alt="${f.title}"><button class="fav-btn favorited" onclick="Nexus.toggleFavorite({id:${f.id},title:'${f.title.replace(/'/g,"\\'")}',coverImage:{extraLarge:'${f.image}'}},event)">♥</button></div>
-            <div class="card-info"><h3>${f.title}</h3></div>
-        </div>`).join('');
+        grid.innerHTML = favs.map(f => {
+            const savedEp = progress[f.id]?.episode || 1;
+            return `<div class="anime-card" onclick="Nexus.open(${f.id}, ${savedEp})">
+                <div class="card-media"><img src="${f.image}" alt="${f.title}"><button class="fav-btn favorited" onclick="Nexus.toggleFavorite({id:${f.id},title:'${f.title.replace(/'/g,"\\'")}',coverImage:{extraLarge:'${f.image}'}},event)">♥</button></div>
+                <div class="card-info"><h3>${f.title}</h3><p>EP ${savedEp}</p></div>
+            </div>`;
+        }).join('');
     }
 
     getWatchProgress() { return JSON.parse(localStorage.getItem('nexus_progress') || '{}'); }
