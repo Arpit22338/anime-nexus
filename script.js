@@ -661,9 +661,11 @@ async searchMovies() {
     }
 
     async loadHentai() {
+        console.log('[HENTAI] loadHentai called, hentaiLoaded:', this.hentaiLoaded);
         if (this.hentaiLoaded) return;
         this.hentaiLoaded = true;
         const grid = document.getElementById('hentai-grid');
+        console.log('[HENTAI] Grid element:', grid);
         grid.innerHTML = '<div class="loading">Loading 18+ content...</div>';
         
         // Always use hardcoded list for now - AniList Ecchi query is unreliable
