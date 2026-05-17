@@ -98,23 +98,24 @@ def search():
 
 @app.route('/api/movies/popular')
 def movies_popular():
-    """Return popular movies with TMDB IDs for embed providers"""
+    """Return popular movies with TMDB and IMDB IDs for embed providers"""
+    # Hardcoded movies with IMDB IDs for reliable playback
     movies = [
-        {'id': 157336, 'tmdb_id': 157336, 'title': 'Interstellar', 'year': '2014', 'image': 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg', 'rating': 8.6, 'type': 'movie'},
-        {'id': 155, 'tmdb_id': 155, 'title': 'The Dark Knight', 'year': '2008', 'image': 'https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg', 'rating': 8.5, 'type': 'movie'},
-        {'id': 27205, 'tmdb_id': 27205, 'title': 'Inception', 'year': '2010', 'image': 'https://image.tmdb.org/t/p/w500/oYuLEt3zVCKq57qu2C8d0wPOQaX.jpg', 'rating': 8.4, 'type': 'movie'},
-        {'id': 299534, 'tmdb_id': 299534, 'title': 'Avengers: Endgame', 'year': '2019', 'image': 'https://image.tmdb.org/t/p/w500/or06FN3DkaZhzkNKVTo52EbKBPm.jpg', 'rating': 8.4, 'type': 'movie'},
-        {'id': 238, 'tmdb_id': 238, 'title': 'The Godfather', 'year': '1972', 'image': 'https://image.tmdb.org/t/p/w500/3bhkrj58Vtu7enYsRolD1fZdja1.jpg', 'rating': 8.7, 'type': 'movie'},
-        {'id': 278, 'tmdb_id': 278, 'title': 'The Shawshank Redemption', 'year': '1994', 'image': 'https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg', 'rating': 8.7, 'type': 'movie'},
-        {'id': 424, 'tmdb_id': 424, 'title': 'Schindlers List', 'year': '1993', 'image': 'https://image.tmdb.org/t/p/w500/sF1U4EUQS8YHUYjNl3pMGNIQyr0.jpg', 'rating': 8.6, 'type': 'movie'},
-        {'id': 129, 'tmdb_id': 129, 'title': 'Spirited Away', 'year': '2001', 'image': 'https://image.tmdb.org/t/p/w500/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg', 'rating': 8.5, 'type': 'movie'},
-        {'id': 372058, 'tmdb_id': 372058, 'title': 'Your Name', 'year': '2016', 'image': 'https://image.tmdb.org/t/p/w500/q719jXXEzOoYaps6babgKnONONX.jpg', 'rating': 8.5, 'type': 'movie'},
-        {'id': 603692, 'tmdb_id': 603692, 'title': 'John Wick: Chapter 4', 'year': '2023', 'image': 'https://image.tmdb.org/t/p/w500/vZloFAK7NmvMGKE7VkF5RMazJi9.jpg', 'rating': 7.7, 'type': 'movie'},
-        {'id': 569094, 'tmdb_id': 569094, 'title': 'Spider-Man: Across the Spider-Verse', 'year': '2023', 'image': 'https://image.tmdb.org/t/p/w500/8Vt6mWEReuy4Of61Lnj5Xj704m8.jpg', 'rating': 8.5, 'type': 'movie'},
-        {'id': 346698, 'tmdb_id': 346698, 'title': 'Barbie', 'year': '2023', 'image': 'https://image.tmdb.org/t/p/w500/iuFNMS8U5cb6xfzi51Dbkovj7vM.jpg', 'rating': 7.0, 'type': 'movie'},
-        {'id': 533535, 'tmdb_id': 533535, 'title': 'Deadpool & Wolverine', 'year': '2024', 'image': 'https://image.tmdb.org/t/p/w500/rmNnMFlrDkW5MSy6DThnXjKOfh4.jpg', 'rating': 7.8, 'type': 'movie'},
-        {'id': 558449, 'tmdb_id': 558449, 'title': 'Twisters', 'year': '2024', 'image': 'https://image.tmdb.org/t/p/w500/6U6oVFLM6nQcXexFOpT8z3L4VGe.jpg', 'rating': 7.0, 'type': 'movie'},
-        {'id': 912649, 'tmdb_id': 912649, 'title': 'Venom: The Last Dance', 'year': '2024', 'image': 'https://image.tmdb.org/t/p/w500/pQ6J4E9w6M9Yp5lK3qJw3M8Lv7G.jpg', 'rating': 6.5, 'type': 'movie'},
+        {'id': 'tt0816692', 'tmdb_id': 157336, 'imdb_id': 'tt0816692', 'title': 'Interstellar', 'year': '2014', 'image': 'https://image.tmdb.org/t/p/w500/gEU2QniE6E77NI6lCU6MxlNBvIx.jpg', 'rating': 8.6},
+        {'id': 'tt0468569', 'tmdb_id': 155, 'imdb_id': 'tt0468569', 'title': 'The Dark Knight', 'year': '2008', 'image': 'https://image.tmdb.org/t/p/w500/qJ2tW6WMUDux911r6m7haRef0WH.jpg', 'rating': 8.5},
+        {'id': 'tt1375666', 'tmdb_id': 27205, 'imdb_id': 'tt1375666', 'title': 'Inception', 'year': '2010', 'image': 'https://image.tmdb.org/t/p/w500/oYuLEt3zVCKq57qu2C8d0wPOQaX.jpg', 'rating': 8.4},
+        {'id': 'tt4154796', 'tmdb_id': 299534, 'imdb_id': 'tt4154796', 'title': 'Avengers: Endgame', 'year': '2019', 'image': 'https://image.tmdb.org/t/p/w500/or06FN3DkaZhzkNKVTo52EbKBPm.jpg', 'rating': 8.4},
+        {'id': 'tt0068646', 'tmdb_id': 238, 'imdb_id': 'tt0068646', 'title': 'The Godfather', 'year': '1972', 'image': 'https://image.tmdb.org/t/p/w500/3bhkrj58Vtu7enYsRolD1fZdja1.jpg', 'rating': 8.7},
+        {'id': 'tt0111161', 'tmdb_id': 278, 'imdb_id': 'tt0111161', 'title': 'The Shawshank Redemption', 'year': '1994', 'image': 'https://image.tmdb.org/t/p/w500/q6y0Go1tsGEsmtFryDOJo3dEmqu.jpg', 'rating': 8.7},
+        {'id': 'tt0109830', 'tmdb_id': 13, 'imdb_id': 'tt0109830', 'title': 'Forrest Gump', 'year': '1994', 'image': 'https://image.tmdb.org/t/p/w500/saHP97rTPS5eLmrLQEcANmKrsFl.jpg', 'rating': 8.8},
+        {'id': 'tt0169547', 'tmdb_id': 129, 'imdb_id': 'tt0169547', 'title': 'Spirited Away', 'year': '2001', 'image': 'https://image.tmdb.org/t/p/w500/39wmItIWsg5sZMyRUHLkWBcuVCM.jpg', 'rating': 8.5},
+        {'id': 'tt1392214', 'tmdb_id': 489, 'imdb_id': 'tt1392214', 'title': 'Prisoners', 'year': '2013', 'image': 'https://image.tmdb.org/t/p/w500/ydDv1XjU4hK2U6A3U1Y5Z2Q1M0C.jpg', 'rating': 8.1},
+        {'id': 'tt0435705', 'tmdb_id': 195, 'imdb_id': 'tt0435705', 'title': 'The Matrix', 'year': '1999', 'image': 'https://image.tmdb.org/t/p/w500/f89U3ADr1oiB1s9GkdPOEpXUk5H.jpg', 'rating': 8.7},
+        {'id': 'tt0266697', 'tmdb_id': 155, 'imdb_id': 'tt0266697', 'title': 'Kill Bill Vol 1', 'year': '2003', 'image': 'https://image.tmdb.org/t/p/w500/cG7hZqV1t18Gb4U3x9wqzM2XJJv.jpg', 'rating': 8.2},
+        {'id': 'tt0361748', 'tmdb_id': 120, 'imdb_id': 'tt0361748', 'title': 'Inglourious Basterds', 'year': '2009', 'image': 'https://image.tmdb.org/t/p/w500/7LoKEXqK3oW9RwrOGy1bS5h7kT6.jpg', 'rating': 8.3},
+        {'id': 'tt0367110', 'tmdb_id': 1124, 'imdb_id': 'tt0367110', 'title': 'Shutter Island', 'year': '2010', 'image': 'https://image.tmdb.org/t/p/w500/6ebCarrL1x112LWgA5Sm1xW6eT.jpg', 'rating': 8.2},
+        {'id': 'tt0892769', 'tmdb_id': 496450, 'imdb_id': 'tt0892769', 'title': 'Your Name', 'year': '2016', 'image': 'https://image.tmdb.org/t/p/w500/q719jXXEzOoYaps6babgKnONONX.jpg', 'rating': 8.5},
+        {'id': 'tt6723592', 'tmdb_id': 603692, 'imdb_id': 'tt6723592', 'title': 'John Wick 4', 'year': '2023', 'image': 'https://image.tmdb.org/t/p/w500/vZloFAK7NmvMGKE7VkF5RMazJi9.jpg', 'rating': 7.7},
     ]
     return jsonify({'success': True, 'movies': movies})
 

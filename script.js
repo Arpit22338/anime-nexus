@@ -12,15 +12,14 @@ const NEXUS_CONFIG = {
         { name: 'DropFile', url: (id, ep, lang) => `https://dropfile.cc/player/tv/anilist-${id}/1/${ep}` },
         { name: 'AniEmbed', url: (id, ep, lang) => `https://aniembed.cc/embed/anime/${id}/${ep}?dub=${lang === 'dub' ? 1 : 0}` },
     ],
-    // Movie/TV providers - reverse engineered from Cineb, NetMirror, Pikashow, etc.
+    // Movie/TV providers - IMDB based for reliable playback
     MOVIE_PROVIDERS: [
-        { name: 'VidSrc', url: (id) => id.startsWith('tt') ? `https://vidsrc.to/embed/imdb/${id}` : `https://vidsrc.to/embed/movie/${id}` },
+        // IMDB providers (preferred)
+        { name: 'StreamIMDB', url: (id) => id.startsWith('tt') ? `https://streamimdb.ru/embed/movie/${id}` : `https://streamimdb.ru/embed/movie/tt${id}` },
+        { name: 'VidSrcIMDB', url: (id) => id.startsWith('tt') ? `https://vidsrc.to/embed/imdb/${id}` : `https://vidsrc.to/embed/movie/${id}` },
         { name: 'VidSrcTMDB', url: (id) => `https://vidsrc.to/embed/tmdb/${id}` },
         { name: '2Embed', url: (id) => `https://www.2embed.cc/embed/${id}` },
-        { name: 'PlayIMDB', url: (id) => id.startsWith('tt') ? `https://streamimdb.ru/embed/movie/${id}` : `https://streamimdb.ru/embed/movie/tt${id}` },
-        { name: 'VidSrc.in', url: (id) => `https://vidsrc.in/embed/movie/${id}` },
         { name: 'MultiEmbed', url: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1` },
-        { name: 'StreamIMDB', url: (id) => id.startsWith('tt') ? `https://streamimdb.ru/embed/movie/${id}` : `https://streamimdb.ru/embed/movie/tt${id}` },
         { name: 'PikaShow', url: (id) => `https://pikashow.bio/embed/movie/${id}` },
         { name: 'SuperEmbed', url: (id) => `https://superembed.cc/embed/${id}` },
         { name: 'StreamTape', url: (id) => `https://streamtape.com/e/${id}` },
@@ -33,11 +32,13 @@ const NEXUS_CONFIG = {
         { name: 'EmbedSu', url: (id, s, e) => `https://embed.su/embed/tv/${id}/${s}/${e}` },
         { name: 'NetMirror', url: (id, s, e) => `https://netmirror.gg/embed/tv/${id}/${s}/${e}` },
     ],
-    // Hentai providers - dedicated sources
+    // Hentai providers - dedicated sources with fallback
     HENTAI_PROVIDERS: [
+        { name: 'AllAnime', url: (id) => `https://allanime.co/anime/${id}` },
         { name: 'VidNest', url: (id) => `https://vidnest.fun/anime/${id}/1/sub` },
-        { name: 'DropFile', url: (id) => `https://dropfile.cc/player/tv/anilist-${id}/1/1` },
-        { name: 'AniEmbed', url: (id) => `https://aniembed.cc/embed/anime/${id}/1` },
+        { name: 'Kayoanime', url: (id) => `https://kayoanime.com/watch/${id}` },
+        { name: 'AniMixPlay', url: (id) => `https://animixplay.to/?anime=${id}` },
+        { name: 'Gogoanime', url: (id) => `https://gogoanime.sk/category/${id}` },
     ],
     IFRAME_TIMEOUT: 8000 // ms before considering iframe failed
 };
@@ -716,6 +717,7 @@ async searchMovies() {
     }
 
     async openHentaiSlug(slug, title) {
+        this.isLoading = true;
         this.clearFallbackTimer();
         document.getElementById('player-overlay').classList.add('active');
         document.getElementById('bottom-nav').style.display = 'none';
@@ -727,8 +729,19 @@ async searchMovies() {
         document.getElementById('server-list').innerHTML = '';
 
         const engine = document.getElementById('video-engine');
-        const url = `https://hanime.tv/videos/hentai/${slug}`;
-        engine.innerHTML = `<iframe src="${url}" allowfullscreen frameborder="0" style="width:100%;height:100%;border:none;"></iframe>`;
+        
+        // Try multiple H-anime sources with fallback
+        const hentaiProviders = [
+            { name: 'Hanime', url: () => `https://hanime.tv/videos/hentai/${slug}` },
+            { name: 'HentaiX', url: () => `https://hentaixz.com/watch/${slug}` },
+            { name: 'HanimeHub', url: () => `https://hanimehub.com/videos/${slug}` },
+            { name: '3HB', url: () => `https://3hentai.net/watch/${slug}` },
+            { name: 'HentaiVip', url: () => `https://hentaivip.com/video/${slug}` },
+        ];
+        
+        const success = await this.playWithFallback(hentaiProviders, (p) => p.url(), engine);
+        if (!success) engine.innerHTML = '<div class="error">No sources available</div>';
+        this.isLoading = false;
     }
 }
 
