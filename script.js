@@ -665,52 +665,21 @@ async searchMovies() {
         this.hentaiLoaded = true;
         const grid = document.getElementById('hentai-grid');
         grid.innerHTML = '<div class="loading">Loading 18+ content...</div>';
-        console.log('[HENTAI] Starting to load...');
-        try {
-            const data = await callAniList(query.hAnime);
-            console.log('[HENTAI] Received data:', data);
-            if (data && data.Page && data.Page.media && data.Page.media.length > 0) {
-                const favs = this.getFavorites();
-                grid.innerHTML = data.Page.media.map(anime => {
-                    const title = anime.title.romaji || anime.title.english || 'Unknown';
-                    const image = anime.coverImage.extraLarge || anime.coverImage.large || '';
-                    const eps = anime.episodes || '??';
-                    const isFav = favs.some(f => f.id === anime.id);
-                    const escapedTitle = title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                    const escapedImage = image.replace(/'/g, "\\'");
-                    const malId = anime.idMal || '';
-                    return `<div class="anime-card" onclick="Nexus.openHentai(${anime.id}, ${malId || 'null'}, '${escapedTitle}')">
-                        <div class="card-media">
-                            <img src="${image}" alt="${title}" loading="lazy">
-                            <button class="fav-btn ${isFav ? 'favorited' : ''}" onclick="Nexus.toggleFavorite({id:${anime.id},title:'${escapedTitle}',coverImage:{extraLarge:'${escapedImage}'}},event)">♥</button>
-                        </div>
-                        <div class="card-info"><h3>${title}</h3><p>${anime.format || ''} ${eps !== '??' ? `• ${eps} eps` : ''}</p></div>
-                    </div>`;
-                }).join('');
-                return;
-            }
-        } catch (e) {
-            console.error('[HENTAI] Error loading:', e);
-            console.warn('AniList hentai failed, falling back to Hanime list');
-        }
-
-        // Fallback: use real working H-anime slugs from hanime.tv
+        
+        // Always use hardcoded list for now - AniList Ecchi query is unreliable
         const hentaiList = [
             { slug: 'isekai-harem-sensou', title: 'Isekai Harem Sensou' },
             { slug: 'kino-no-tabi', title: 'Kino no Tabi' },
-            { slug: 'tsukipro-the-animation-2', title: 'Tsukipro The Animation 2' },
-            { slug: 'tsukipro-the-animation', title: 'Tsukipro The Animation' },
             { slug: 'harem-battle-shirokuma', title: 'Harem Battle Shirokuma' },
             { slug: 'bakuon-castle', title: 'Bakuon Castle' },
-            { slug: 'kagura-meirinn', title: 'Kagura Meirinn' },
-            { slug: 'ninja-bare-hentai-4', title: 'Ninja Bare Hentai 4' },
             { slug: 'seigi-no-mikazuki', title: 'Seigi no Mikazuki' },
-            { slug: 'ryou-joku-brand', title: 'Ryou Joku Brand' },
             { slug: 'kansen-koi-no-kanransha', title: 'Kansen Koi no Kanransha' },
             { slug: 'inbyou-gokko', title: 'Inbyou Gokko' },
             { slug: 'shiro-no-kuro-no-kishi', title: 'Shiro no Kuro no Kishi' },
             { slug: 'mankai-otome', title: 'Mankai Otome' },
             { slug: 'daitoshi-ryou-no-yoru', title: 'Daitoshi Ryou no Yoru' },
+            { slug: 'tsukipro-the-animation-2', title: 'Tsukipro The Animation 2' },
+            { slug: 'kagura-meirinn', title: 'Kagura Meirinn' },
         ];
         
         grid.innerHTML = hentaiList.map(h => `
@@ -721,9 +690,6 @@ async searchMovies() {
                 <div class="card-info"><h3>${h.title}</h3><p>18+</p></div>
             </div>
         `).join('');
-        
-        // Mark as loaded
-        this.hentaiLoaded = true;
     }
 
     async openHentai(anilistId, malId, title) {
