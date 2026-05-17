@@ -21,7 +21,7 @@ A futuristic anime streaming web application with a terminal/hacker aesthetic.
 ## File Structure
 
 ```
-GeminiCLI/
+ANIME-NIXUZ/
 ├── index.html          # Main HTML structure
 ├── script.js           # Core streaming logic (NEW - Fixed)
 ├── tactical.css        # Cyberpunk theme styles
