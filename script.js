@@ -518,14 +518,14 @@ class AnimeNexus {
         }
     }
 
-    async searchBackend(title) {
+async searchBackend(title) {
         try {
             document.getElementById('video-engine').innerHTML = '<div class="loading">SCANNING_FREQUENCIES...</div>';
             
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 15000);
+            const timeoutId = setTimeout(() => controller.abort(), 30000);
             
-            // Try to get provider ID from AniList ID mapping first (instant)
+            // Get provider ID from lookup
             let providerId = null;
             if (this.currentAnime && this.currentAnime.id) {
                 try {
@@ -534,10 +534,54 @@ class AnimeNexus {
                         { signal: controller.signal }
                     );
                     const lookupData = await lookupResp.json();
-                    console.log('Lookup result:', lookupData);
                     if (lookupData.mapped && lookupData.provider_id) {
                         providerId = lookupData.provider_id;
                     }
+                } catch (e) {
+                    console.log('Lookup failed');
+                }
+            }
+            
+            let data;
+            if (providerId) {
+                const response = await fetch(
+                    `${NEXUS_CONFIG.BACKEND_API}/episodes-by-id/${encodeURIComponent(providerId)}?language=${this.currentLang}`,
+                    { signal: controller.signal }
+                );
+                clearTimeout(timeoutId);
+                data = await response.json();
+                data.anime = { name: title, id: providerId };
+            } else {
+                const response = await fetch(
+                    `${NEXUS_CONFIG.BACKEND_API}/episodes/${encodeURIComponent(title)}?language=${this.currentLang}`,
+                    { signal: controller.signal }
+                );
+                clearTimeout(timeoutId);
+                data = await response.json();
+            }
+
+            if (data.success && data.episodes && data.episodes.length > 0) {
+                this.currentBackendName = data.anime.name;
+                this.currentBackendId = data.anime.id || data.anime_id;
+                this.episodes = data.episodes;
+                this.currentEpisodePage = 0;
+                this.displayEpisodeList();
+                
+                const progress = this.getWatchProgress();
+                const savedEp = progress[this.currentAnime.id]?.episode || 1;
+                this.playEpisode(savedEp);
+            } else {
+                this.showNoStreams();
+            }
+        } catch (error) {
+            console.error('Backend search failed:', error);
+            if (error.name === 'AbortError') {
+                this.showNoStreams('Request timed out - try again');
+            } else {
+                this.showNoStreams(error.message);
+            }
+        }
+    }
                 } catch (e) {
                     console.log('Lookup failed, falling back to search');
                 }
