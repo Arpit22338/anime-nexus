@@ -701,16 +701,16 @@ class AnimeNexus {
             const data = await response.json();
 
             if (data.success && data.stream_url) {
-                // Stream URLs from Anitaku are embed URLs - use iframe
+                // Show stream option - open in new tab (most reliable)
                 document.getElementById('video-engine').innerHTML = `
-                    <iframe 
-                        src="${data.stream_url}" 
-                        allowfullscreen="true" 
-                        frameborder="0" 
-                        scrolling="no"
-                        allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-                        style="width: 100%; height: 100%; border: none;"
-                    ></iframe>
+                    <div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;gap:20px;padding:40px;">
+                        <h3 style="color:#00ff9f;">Stream Ready</h3>
+                        <p style="color:#888;">Click below to watch on GogoAnime</p>
+                        <a href="${data.stream_url}" target="_blank" 
+                           style="background:#00ff9f;color:#000;padding:15px 30px;text-decoration:none;border-radius:8px;font-weight:bold;font-size:1.1rem;">
+                            WATCH NOW
+                        </a>
+                    </div>
                 `;
                 
                 // Save watch progress
