@@ -661,14 +661,11 @@ async searchMovies() {
     }
 
     async loadHentai() {
-        console.log('[HENTAI] loadHentai called, hentaiLoaded:', this.hentaiLoaded);
         if (this.hentaiLoaded) return;
         this.hentaiLoaded = true;
         const grid = document.getElementById('hentai-grid');
-        console.log('[HENTAI] Grid element:', grid);
         grid.innerHTML = '<div class="loading">Loading 18+ content...</div>';
         
-        // Always use hardcoded list for now - AniList Ecchi query is unreliable
         const hentaiList = [
             { slug: 'isekai-harem-sensou', title: 'Isekai Harem Sensou' },
             { slug: 'kino-no-tabi', title: 'Kino no Tabi' },
@@ -680,14 +677,14 @@ async searchMovies() {
             { slug: 'shiro-no-kuro-no-kishi', title: 'Shiro no Kuro no Kishi' },
             { slug: 'mankai-otome', title: 'Mankai Otome' },
             { slug: 'daitoshi-ryou-no-yoru', title: 'Daitoshi Ryou no Yoru' },
-            { slug: 'tsukipro-the-animation-2', title: 'Tsukipro The Animation 2' },
-            { slug: 'kagura-meirinn', title: 'Kagura Meirinn' },
         ];
+        
+        const placeholder = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 450%22><rect fill=%22%23222%22 width=%22300%22 height=%22450%22/><text x=%22150%22 y=%22225%22 fill=%22%23666%22 text-anchor=%22middle%22 font-size=%2240%22>18+</text></svg>';
         
         grid.innerHTML = hentaiList.map(h => `
             <div class="anime-card" onclick="Nexus.openHentaiSlug('${h.slug}', '${h.title.replace(/'/g, "\\'")}')">
                 <div class="card-media">
-                    <img src="https://img.3hentai.net/thumb/${h.slug}.jpg" alt="${h.title}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 450%22><rect fill=%22%23222%22 width=%22300%22 height=%22450%22/><text x=%22150%22 y=%22225%22 fill=%22%23666%22 text-anchor=%22middle%22>18+</text></svg>'">
+                    <img src="${placeholder}" alt="${h.title}" loading="lazy">
                 </div>
                 <div class="card-info"><h3>${h.title}</h3><p>18+</p></div>
             </div>
