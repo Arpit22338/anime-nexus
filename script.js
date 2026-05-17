@@ -5,7 +5,7 @@
  */
 
 const NEXUS_CONFIG = {
-    ANILIST: 'https://graphql.anilist.co/',
+    ANILIST: 'https://anime-nexus-api.livelyisland-018542b8.southeastasia.azurecontainerapps.io/api/anilist',
     BACKEND_API: 'https://anime-nexus-api.livelyisland-018542b8.southeastasia.azurecontainerapps.io/api'
 };
 
@@ -142,9 +142,13 @@ class AnimeNexus {
         document.getElementById('home').style.display = tab === 'home' ? 'block' : 'none';
         document.getElementById('favorites-view').style.display = tab === 'favorites' ? 'block' : 'none';
         document.getElementById('continue-view').style.display = tab === 'continue' ? 'block' : 'none';
+        document.getElementById('movies-view').style.display = tab === 'movies' ? 'block' : 'none';
+        document.getElementById('hentai-view').style.display = tab === 'hentai' ? 'block' : 'none';
         
         if (tab === 'favorites') this.loadFavorites();
         if (tab === 'continue') this.loadContinueWatching();
+        if (tab === 'movies') this.loadMovies();
+        if (tab === 'hentai') this.loadHentai();
     }
 
     // ==================== FAVORITES ====================
@@ -838,6 +842,41 @@ class AnimeNexus {
         } catch (e) {
             grid.innerHTML = '<div class="error">Failed to load movies</div>';
         }
+    }
+    
+    // ==================== HENTAI ====================
+    async loadHentai() {
+        const grid = document.getElementById('hentai-grid');
+        if (grid.innerHTML.trim()) return;
+        
+        try {
+            const resp = await fetch(NEXUS_CONFIG.BACKEND_API + '/hentai/providers');
+            const data = await resp.json();
+            
+            if (data.providers) {
+                grid.innerHTML = data.providers.map(p => `
+                    <div class="anime-card" onclick="Nexus.openHentai('${p.id}')">
+                        <div class="card-media">
+                            <img src="https://via.placeholder.com/150x200?text=18%2B" alt="${p.name}">
+                        </div>
+                        <div class="card-info">
+                            <h3>${p.name}</h3>
+                            <p>Click to search</p>
+                        </div>
+                    </div>
+                `).join('');
+            }
+        } catch (e) {
+            grid.innerHTML = '<div class="error">Failed to load hentai providers</div>';
+        }
+    }
+    
+    openHentai(providerId) {
+        const query = prompt('Search hentai on ' + providerId + ':');
+        if (!query) return;
+        
+        const searchUrl = `https://${providerId}.${providerId === 'hentai2w' ? 'com' : providerId === 'hentaihaven' ? 'com' : 'io'}/search?q=${encodeURIComponent(query)}`;
+        window.open(searchUrl, '_blank');
     }
     
     openPlayer(type, data) {

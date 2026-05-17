@@ -178,6 +178,15 @@
         </div>
     </main>
 
+    <!-- Hentai View (hidden by default) -->
+    <main id="hentai-view" style="display:none;">
+        <h2 class="section-title">18+ Adult Anime</h2>
+        <p class="section-desc">Hentai streaming - select a provider to search</p>
+        <div class="anime-grid" id="hentai-grid">
+            <!-- Hentai cards injected here -->
+        </div>
+    </main>
+
     <!-- Professional Player Overlay -->
     <div id="player-overlay" class="player-overlay">
         <button class="close-btn" onclick="Nexus.close()">GO BACK</button>
@@ -235,6 +244,16 @@
     <button class="nav-tab" data-tab="continue" onclick="Nexus.showTab('continue')">
         <span class="nav-icon"><i class='bx bx-play'></i></span>
         <span class="nav-label">RESUME</span>
+    </button>
+
+    <button class="nav-tab" data-tab="movies" onclick="Nexus.showTab('movies')">
+        <span class="nav-icon"><i class='bx bx-film'></i></span>
+        <span class="nav-label">MOVIES</span>
+    </button>
+
+    <button class="nav-tab" data-tab="hentai" onclick="Nexus.showTab('hentai')">
+        <span class="nav-icon"><i class='bx bx-book-heart'></i></span>
+        <span class="nav-label">18+</span>
     </button>
 </nav>
 
