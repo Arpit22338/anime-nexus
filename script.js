@@ -664,31 +664,29 @@ async searchMovies() {
         if (this.hentaiLoaded) return;
         this.hentaiLoaded = true;
         const grid = document.getElementById('hentai-grid');
-        grid.innerHTML = '<div class="loading">Loading 18+ content...</div>';
         
         const hentaiList = [
             { slug: 'isekai-harem-sensou', title: 'Isekai Harem Sensou' },
-            { slug: 'kino-no-tabi', title: 'Kino no Tabi' },
             { slug: 'harem-battle-shirokuma', title: 'Harem Battle Shirokuma' },
-            { slug: 'bakuon-castle', title: 'Bakuon Castle' },
-            { slug: 'seigi-no-mikazuki', title: 'Seigi no Mikazuki' },
             { slug: 'kansen-koi-no-kanransha', title: 'Kansen Koi no Kanransha' },
             { slug: 'inbyou-gokko', title: 'Inbyou Gokko' },
             { slug: 'shiro-no-kuro-no-kishi', title: 'Shiro no Kuro no Kishi' },
             { slug: 'mankai-otome', title: 'Mankai Otome' },
             { slug: 'daitoshi-ryou-no-yoru', title: 'Daitoshi Ryou no Yoru' },
+            { slug: 'kino-no-tabi', title: 'Kino no Tabi' },
+            { slug: 'bakuon-castle', title: 'Bakuon Castle' },
+            { slug: 'seigi-no-mikazuki', title: 'Seigi no Mikazuki' },
         ];
         
-        const placeholder = 'data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 450%22><rect fill=%22%23222%22 width=%22300%22 height=%22450%22/><text x=%22150%22 y=%22225%22 fill=%22%23666%22 text-anchor=%22middle%22 font-size=%2240%22>18+</text></svg>';
+        let html = '';
+        hentaiList.forEach(h => {
+            html += `<div class="anime-card" style="cursor:pointer;margin:10px;display:inline-block;width:150px;vertical-align:top;" onclick="Nexus.openHentaiSlug('${h.slug}', '${h.title.replace(/'/g, "\\'")}')">`;
+            html += `<div class="card-media" style="width:150px;height:220px;background:#222;display:flex;align-items:center;justify-content:center;"><span style="color:#666;font-size:40px;">🔞</span></div>`;
+            html += `<div class="card-info"><h3 style="font-size:14px;margin:5px 0;color:#fff;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${h.title}</h3><p style="color:#888;font-size:12px;">18+</p></div>`;
+            html += `</div>`;
+        });
         
-        grid.innerHTML = hentaiList.map(h => `
-            <div class="anime-card" onclick="Nexus.openHentaiSlug('${h.slug}', '${h.title.replace(/'/g, "\\'")}')">
-                <div class="card-media">
-                    <img src="${placeholder}" alt="${h.title}" loading="lazy">
-                </div>
-                <div class="card-info"><h3>${h.title}</h3><p>18+</p></div>
-            </div>
-        `).join('');
+        grid.innerHTML = html;
     }
 
     async openHentai(anilistId, malId, title) {
@@ -734,26 +732,13 @@ async searchMovies() {
 
         const engine = document.getElementById('video-engine');
         
-        // Try different embed-friendly H-anime sources
-        const providers = [
-            { name: 'HAnimeHub', getUrl: (s) => `https://hanimehub.com/embed/${s}` },
-            { name: 'HentaiX', getUrl: (s) => `https://hentaixz.com/embed/${s}` },
-            { name: '3HB', getUrl: (s) => `https://3hentai.net/embed/${s}` },
-            { name: 'HentaiVip', getUrl: (s) => `https://hentaivip.com/embed/${s}` },
-            { name: 'HentaiFF', getUrl: (s) => `https://hentai-ff.com/embed/${s}` },
-        ];
+        // H-anime requires external browser - show message
+        engine.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#fff;text-align:center;padding:20px;background:#111;">
+            <p style="font-size:20px;margin-bottom:15px;">18+ Content</p>
+            <p style="color:#888;margin-bottom:20px;">Opens in external player</p>
+            <button onclick="window.open('https://hanime.tv/videos/hentai/${slug}', '_blank')" style="background:#e91e63;color:#fff;border:none;padding:12px 30px;border-radius:8px;font-size:16px;cursor:pointer;">Watch Now</button>
+        </div>`;
         
-        engine.innerHTML = '<div class="loading">Trying sources...</div>';
-        
-        // Try each provider with fallback
-        for (const p of providers) {
-            const url = p.getUrl(slug);
-            engine.innerHTML = `<iframe src="${url}" allowfullscreen frameborder="0" style="width:100%;height:100%;border:none;" sandbox="allow-scripts allow-same-origin allow-popups"></iframe>`;
-            break;
-        }
-        
-        this.isLoading = false;
-        if (!success) engine.innerHTML = '<div class="error">No sources available</div>';
         this.isLoading = false;
     }
 }
