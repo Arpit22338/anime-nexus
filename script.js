@@ -330,7 +330,7 @@ class AnimeNexus {
         });
     }
 
-    close() { this.clearFallbackTimer(); this.saveProgressOnClose(); window.history.back(); }
+    close() { this.clearFallbackTimer(); this.saveProgressOnClose(); window.history.back(); this.showTab('home'); }
     doClose() { this.clearFallbackTimer(); this.saveProgressOnClose(); window.history.pushState({}, '', '/'); this.closeWithoutPush(); }
     saveProgressOnClose() {
         if (this.currentAnime && this.currentEp > 0) {
@@ -350,7 +350,7 @@ class AnimeNexus {
         document.getElementById('video-engine').innerHTML = '';
         this.currentAnime = null; this.currentEp = 1; this.isLoading = false;
     }
-    goBack() { this.closeWithoutPush(); window.history.replaceState({}, '', '/'); }
+    goBack() { this.closeWithoutPush(); window.history.replaceState({}, '', '/'); this.showTab('home'); }
     stripHTML(html) { const tmp = document.createElement('div'); tmp.innerHTML = html; return tmp.textContent || tmp.innerText || ''; }
 
     getFavorites() { return JSON.parse(localStorage.getItem('nexus_favorites') || '[]'); }
@@ -460,6 +460,8 @@ class AnimeNexus {
     }
 
     async openMovie(movieId, title, tmdbId = '', imdbId = '') {
+        if (this.isLoading) return;
+        this.isLoading = true;
         this.clearFallbackTimer();
         document.getElementById('player-overlay').classList.add('active');
         document.getElementById('bottom-nav').style.display = 'none';
@@ -496,6 +498,7 @@ class AnimeNexus {
 
         const success = await this.playWithFallback(providers, (p) => p.url(), engine);
         if (!success) engine.innerHTML = '<div class="error">All movie sources offline</div>';
+        this.isLoading = false;
     }
 
     async loadHentai() {
@@ -550,6 +553,8 @@ class AnimeNexus {
     }
 
     async openHentai(anilistId, malId, title) {
+        if (this.isLoading) return;
+        this.isLoading = true;
         this.clearFallbackTimer();
         document.getElementById('player-overlay').classList.add('active');
         document.getElementById('bottom-nav').style.display = 'none';
@@ -573,6 +578,7 @@ class AnimeNexus {
 
         const success = await this.playWithFallback(providers, (p) => p.url(), engine);
         if (!success) engine.innerHTML = '<div class="error">All sources offline</div>';
+        this.isLoading = false;
     }
 
     async openHentaiSlug(slug, title) {
