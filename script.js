@@ -733,16 +733,10 @@ async searchMovies() {
 
         const engine = document.getElementById('video-engine');
         
-        // Try multiple H-anime sources with fallback
-        const hentaiProviders = [
-            { name: 'Hanime', url: () => `https://hanime.tv/videos/hentai/${slug}` },
-            { name: 'HentaiX', url: () => `https://hentaixz.com/watch/${slug}` },
-            { name: 'HanimeHub', url: () => `https://hanimehub.com/videos/${slug}` },
-            { name: '3HB', url: () => `https://3hentai.net/watch/${slug}` },
-            { name: 'HentaiVip', url: () => `https://hentaivip.com/video/${slug}` },
-        ];
-        
-        const success = await this.playWithFallback(hentaiProviders, (p) => p.url(), engine);
+        // Try iframe direct - hanime.tv works better with full page
+        engine.innerHTML = `<iframe src="https://hanime.tv/videos/hentai/${slug}" allowfullscreen frameborder="0" style="width:100%;height:100%;border:none;"></iframe>`;
+        this.isLoading = false;
+        return;
         if (!success) engine.innerHTML = '<div class="error">No sources available</div>';
         this.isLoading = false;
     }
