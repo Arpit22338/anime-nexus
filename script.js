@@ -369,8 +369,14 @@ class AnimeNexus {
         });
     }
 
-    close() { this.clearFallbackTimer(); this.saveProgressOnClose(); window.history.back(); this.showTab('home'); }
-    doClose() { this.clearFallbackTimer(); this.saveProgressOnClose(); window.history.pushState({}, '', '/'); this.closeWithoutPush(); }
+    close() { 
+        this.clearFallbackTimer(); 
+        this.saveProgressOnClose(); 
+        this.closeWithoutPush(); 
+        window.history.replaceState({}, '', '/');
+        this.showTab('home'); 
+    }
+    doClose() { this.clearFallbackTimer(); this.saveProgressOnClose(); this.closeWithoutPush(); window.history.replaceState({}, '', '/'); this.showTab('home'); }
     saveProgressOnClose() {
         if (this.currentAnime && this.currentEp > 0) {
             this.saveWatchProgress(this.currentAnime.id, {
@@ -389,7 +395,11 @@ class AnimeNexus {
         document.getElementById('video-engine').innerHTML = '';
         this.currentAnime = null; this.currentEp = 1; this.isLoading = false;
     }
-    goBack() { this.closeWithoutPush(); window.history.replaceState({}, '', '/'); this.showTab('home'); }
+    goBack() { 
+        this.closeWithoutPush(); 
+        window.history.replaceState({}, '', '/'); 
+        this.showTab('home'); 
+    }
     stripHTML(html) { const tmp = document.createElement('div'); tmp.innerHTML = html; return tmp.textContent || tmp.innerText || ''; }
 
     getFavorites() { return JSON.parse(localStorage.getItem('nexus_favorites') || '[]'); }
