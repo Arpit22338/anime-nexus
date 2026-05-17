@@ -773,9 +773,8 @@ class AnimeNexus {
         tmp.innerHTML = html;
         return tmp.textContent || tmp.innerText || '';
     }
-}
 
-// ==================== MOVIES ====================
+    // ==================== MOVIES ====================
     loadMovies() {
         const grid = document.getElementById('movies-grid');
         if (!grid.innerHTML.trim()) {
@@ -913,6 +912,7 @@ class AnimeNexus {
             }
         });
     }
+}
 
 // Initialize
 const Nexus = new AnimeNexus();
