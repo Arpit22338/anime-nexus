@@ -232,28 +232,29 @@ class AnimeNexus {
         const totalPages = Math.ceil(total / this.epPageSize);
         const start = (this.epPage - 1) * this.epPageSize + 1;
         const end = Math.min(this.epPage * this.epPageSize, total);
-        container.innerHTML = '';
+        
+        let html = '';
+        
+        // Page navigation - full width row
         if (totalPages > 1) {
-            const pageDiv = document.createElement('div');
-            pageDiv.style.cssText = 'display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;';
+            html += '<div style="display:flex;gap:4px;margin-bottom:8px;flex-wrap:wrap;grid-column:1/-1;">';
             for (let p = 1; p <= totalPages; p++) {
-                const btn = document.createElement('button');
                 const s = (p-1) * this.epPageSize + 1;
                 const e = Math.min(p * this.epPageSize, total);
-                btn.textContent = `${s}-${e}`;
-                btn.style.cssText = `font-size:0.6rem;padding:3px 8px;background:${p === this.epPage ? 'var(--accent)' : 'rgba(255,255,255,0.05)'};border:1px solid ${p === this.epPage ? 'var(--accent)' : 'rgba(255,255,255,0.1)'};color:${p === this.epPage ? '#000' : '#888'};cursor:pointer;border-radius:2px;`;
-                btn.onclick = () => { this.epPage = p; this.loadEpisodes(); };
-                pageDiv.appendChild(btn);
+                const bg = p === this.epPage ? 'var(--accent)' : 'rgba(255,255,255,0.05)';
+                const border = p === this.epPage ? 'var(--accent)' : 'rgba(255,255,255,0.1)';
+                const color = p === this.epPage ? '#000' : '#888';
+                html += `<button onclick="Nexus.epPage=${p};Nexus.loadEpisodes();" style="font-size:0.6rem;padding:3px 8px;background:${bg};border:1px solid ${border};color:${color};cursor:pointer;border-radius:2px;">${s}-${e}</button>`;
             }
-            container.appendChild(pageDiv);
+            html += '</div>';
         }
+        
+        // Episode buttons
         for (let i = start; i <= end; i++) {
-            const btn = document.createElement('button');
-            btn.className = `ep-btn ${i === this.currentEp ? 'active' : ''}`;
-            btn.textContent = i;
-            btn.onclick = () => this.playEpisode(i);
-            container.appendChild(btn);
+            html += `<button class="ep-btn ${i === this.currentEp ? 'active' : ''}" onclick="Nexus.playEpisode(${i})">${i}</button>`;
         }
+        
+        container.innerHTML = html;
     }
 
     clearFallbackTimer() {
