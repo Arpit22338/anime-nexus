@@ -479,21 +479,30 @@ class AnimeNexus {
         // Resolve TMDB/IMDB if backend provided TVMaze ids
         let resolvedTmdb = tmdbId || '';
         let resolvedImdb = imdbId || '';
-        if (!resolvedTmdb && !resolvedImdb) {
-            const resolved = await this.resolveMovieIds(movieId);
-            resolvedTmdb = resolved.tmdb || '';
-            resolvedImdb = resolved.imdb || '';
+        
+        console.log('[MOVIE] movieId:', movieId, 'tmdbId:', tmdbId, 'imdbId:', imdbId);
+        
+        if (!resolvedTmdb && !resolvedImdb && movieId) {
+            // Try to treat movieId as TMDB if it looks like one (numeric and > 1000)
+            if (movieId > 1000) {
+                resolvedTmdb = String(movieId);
+                console.log('[MOVIE] Using movieId as TMDB:', resolvedTmdb);
+            }
         }
 
         const candidates = [];
         if (resolvedTmdb) candidates.push({ id: resolvedTmdb, label: 'TMDB' });
         if (resolvedImdb) candidates.push({ id: resolvedImdb, label: 'IMDB' });
-        if (candidates.length === 0) candidates.push({ id: movieId, label: 'RAW' });
+        if (candidates.length === 0) candidates.push({ id: String(movieId), label: 'RAW' });
+
+        console.log('[MOVIE] Candidates:', candidates);
 
         const providers = [];
         candidates.forEach(c => {
             NEXUS_CONFIG.MOVIE_PROVIDERS.forEach(p => {
-                providers.push({ name: `${p.name}-${c.label}`, url: () => p.url(c.id) });
+                const url = p.url(c.id);
+                console.log('[MOVIE] Provider:', p.name, 'URL:', url);
+                providers.push({ name: `${p.name}-${c.label}`, url: () => url });
             });
         });
 
