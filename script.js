@@ -480,14 +480,52 @@ class AnimeNexus {
         if (this.moviesLoaded) return;
         this.moviesLoaded = true;
         const grid = document.getElementById('movies-grid');
-        grid.innerHTML = '<div class="loading">Loading movies...</div>';
+        grid.innerHTML = '<div class="loading">Loading popular movies...</div>';
+        
+        // Try OMDb API for popular movies
+        try {
+            const movies = await this.getOMDbPopularMovies();
+            if (movies && movies.length > 0) {
+                this.renderMovies(movies);
+                return;
+            }
+        } catch(e) { console.log('OMDb failed:', e); }
+        
+        // Fallback to backend
         try {
             const resp = await fetch(NEXUS_CONFIG.BACKEND_API + '/movies/popular?category=all');
             const data = await resp.json();
             if (data.movies && data.movies.length > 0) {
                 this.renderMovies(data.movies);
-            } else { grid.innerHTML = '<div class="error">No movies found</div>'; }
-        } catch (e) { grid.innerHTML = '<div class="error">Failed to load movies</div>'; }
+                return;
+            }
+        } catch (e) { console.log('Backend failed:', e); }
+        
+        grid.innerHTML = '<div class="error">Failed to load movies</div>';
+    }
+    
+    async getOMDbPopularMovies() {
+        // Use hardcoded popular IMDB IDs for reliable results
+        const imdbIds = ['tt0816692', 'tt0468569', 'tt1375666', 'tt4154796', 'tt0068646', 'tt0111161', 'tt0109830', 'tt0169547', 'tt0892769', 'tt0435705', 'tt0266697', 'tt0361748', 'tt0367110', 'tt6723592', 'tt5311544'];
+        const movies = [];
+        for (const id of imdbIds.slice(0, 10)) {
+            try {
+                const resp = await fetch(`https://www.omdbapi.com/?i=${id}&apikey=6e2a5f8`);
+                const data = await resp.json();
+                if (data.Response === 'True') {
+                    movies.push({
+                        id: data.imdbID,
+                        imdbId: data.imdbID,
+                        tmdbId: null,
+                        title: data.Title,
+                        poster: data.Poster !== 'N/A' ? data.Poster : '',
+                        year: data.Year,
+                        rating: data.imdbRating !== 'N/A' ? data.imdbRating : ''
+                    });
+                }
+            } catch(e) { continue; }
+        }
+        return movies;
     }
 
     renderMovies(movies) {
@@ -582,34 +620,36 @@ async searchMovies() {
         const engine = document.getElementById('video-engine');
         engine.innerHTML = '<div class="loading">Searching for movie...</div>';
 
-        // Get IMDB from TMDB if needed
-        let imdb = imdbId;
-        if (!imdb && tmdbId) {
+        // Handle ID - movieId might already be IMDB ID (ttxxxxx)
+        let finalTmdbId = tmdbId;
+        let finalImdbId = imdbId;
+        
+        // If movieId starts with 'tt', it's already an IMDB ID
+        if (String(movieId).startsWith('tt')) {
+            finalImdbId = movieId;
+            finalTmdbId = '';
+        } else if (!finalImdbId && finalTmdbId) {
+            // Try to get IMDB from TMDB
             try {
-                const resp = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}/external_ids?api_key=4d8c8c6e8e2f8e6e8e2f8e6e8e2f8e6e`);
+                const resp = await fetch(`https://api.themoviedb.org/3/movie/${finalTmdbId}/external_ids?api_key=4d8c8c6e8e2f8e6e8e2f8e6e8e2f8e6e`);
                 const data = await resp.json();
-                imdb = data.imdb_id || '';
-                console.log('[MOVIE] Got IMDB:', imdb);
+                finalImdbId = data.imdb_id || '';
             } catch(e) { console.log('[MOVIE] Failed to get IMDB:', e); }
         }
 
-        // Build providers list with both TMDB and IMDB IDs
-        const tmdbIdStr = String(tmdbId || movieId);
-        const imdbIdStr = imdb || '';
-        
         const providers = [];
         
         // Add TMDB-based providers
-        if (tmdbIdStr && !isNaN(parseInt(tmdbIdStr))) {
+        if (finalTmdbId && !isNaN(parseInt(finalTmdbId))) {
             NEXUS_CONFIG.MOVIE_PROVIDERS.forEach(p => {
-                providers.push({ name: p.name + '-TMDB', url: () => p.url(tmdbIdStr) });
+                providers.push({ name: p.name + '-TMDB', url: () => p.url(finalTmdbId) });
             });
         }
         
         // Add IMDB-based providers
-        if (imdbIdStr) {
+        if (finalImdbId) {
             NEXUS_CONFIG.MOVIE_PROVIDERS.forEach(p => {
-                providers.push({ name: p.name + '-IMDB', url: () => p.url(imdbIdStr) });
+                providers.push({ name: p.name + '-IMDB', url: () => p.url(finalImdbId) });
             });
         }
 
