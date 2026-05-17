@@ -14,12 +14,13 @@ const NEXUS_CONFIG = {
     ],
     // Movie/TV providers - reverse engineered from Cineb, NetMirror, Pikashow, etc.
     MOVIE_PROVIDERS: [
-        { name: 'VidSrc', url: (id) => `https://vidsrc.to/embed/movie/${id}` },
+        { name: 'VidSrc', url: (id) => id.startsWith('tt') ? `https://vidsrc.to/embed/imdb/${id}` : `https://vidsrc.to/embed/movie/${id}` },
         { name: 'VidSrcTMDB', url: (id) => `https://vidsrc.to/embed/tmdb/${id}` },
         { name: '2Embed', url: (id) => `https://www.2embed.cc/embed/${id}` },
+        { name: 'PlayIMDB', url: (id) => id.startsWith('tt') ? `https://streamimdb.ru/embed/movie/${id}` : `https://streamimdb.ru/embed/movie/tt${id}` },
         { name: 'VidSrc.in', url: (id) => `https://vidsrc.in/embed/movie/${id}` },
         { name: 'MultiEmbed', url: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1` },
-        { name: 'StreamIMDB', url: (id) => `https://streamimdb.ru/embed/movie/${id}` },
+        { name: 'StreamIMDB', url: (id) => id.startsWith('tt') ? `https://streamimdb.ru/embed/movie/${id}` : `https://streamimdb.ru/embed/movie/tt${id}` },
         { name: 'PikaShow', url: (id) => `https://pikashow.bio/embed/movie/${id}` },
         { name: 'SuperEmbed', url: (id) => `https://superembed.cc/embed/${id}` },
         { name: 'StreamTape', url: (id) => `https://streamtape.com/e/${id}` },
@@ -381,7 +382,7 @@ class AnimeNexus {
         this.saveProgressOnClose(); 
         this.closeWithoutPush(); 
         window.history.replaceState({}, '', '/');
-        this.showTab('home'); 
+        this.goBack();
     }
     doClose() { this.clearFallbackTimer(); this.saveProgressOnClose(); this.closeWithoutPush(); window.history.replaceState({}, '', '/'); this.showTab('home'); }
     saveProgressOnClose() {
@@ -404,8 +405,23 @@ class AnimeNexus {
     }
     goBack() { 
         this.closeWithoutPush(); 
-        window.history.replaceState({}, '', '/'); 
-        this.showTab('home'); 
+        // Reset URL and show home
+        window.history.replaceState({}, '', '/');
+        this.currentAnime = null;
+        this.currentEp = 1;
+        this.isLoading = false;
+        
+        // Show home view
+        document.getElementById('home').style.display = 'block';
+        document.getElementById('movies-view').style.display = 'none';
+        document.getElementById('hentai-view').style.display = 'none';
+        document.getElementById('favorites-view').style.display = 'none';
+        document.getElementById('continue-view').style.display = 'none';
+        
+        // Update nav buttons
+        document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
+        document.querySelector('.nav-tab[data-tab="home"]').classList.add('active');
+        this.currentTab = 'home';
     }
     stripHTML(html) { const tmp = document.createElement('div'); tmp.innerHTML = html; return tmp.textContent || tmp.innerText || ''; }
 
@@ -520,11 +536,7 @@ class AnimeNexus {
         this.isLoading = true;
         this.clearFallbackTimer();
         
-        // Ensure we have a valid ID
-        let id = tmdbId || movieId || imdbId;
-        if (!id) id = movieId;
-        
-        console.log('[MOVIE] Playing:', title, 'ID:', id);
+        console.log('[MOVIE] Playing:', title, 'movieId:', movieId, 'tmdbId:', tmdbId, 'imdbId:', imdbId);
         
         document.getElementById('player-overlay').classList.add('active');
         document.getElementById('bottom-nav').style.display = 'none';
@@ -538,13 +550,38 @@ class AnimeNexus {
         const engine = document.getElementById('video-engine');
         engine.innerHTML = '<div class="loading">Searching for movie...</div>';
 
-        // Build providers list - use ID directly
-        const providers = NEXUS_CONFIG.MOVIE_PROVIDERS.map(p => ({
-            name: p.name,
-            url: () => p.url(id)
-        }));
+        // Get IMDB from TMDB if needed
+        let imdb = imdbId;
+        if (!imdb && tmdbId) {
+            try {
+                const resp = await fetch(`https://api.themoviedb.org/3/movie/${tmdbId}/external_ids?api_key=4d8c8c6e8e2f8e6e8e2f8e6e8e2f8e6e`);
+                const data = await resp.json();
+                imdb = data.imdb_id || '';
+                console.log('[MOVIE] Got IMDB:', imdb);
+            } catch(e) { console.log('[MOVIE] Failed to get IMDB:', e); }
+        }
+
+        // Build providers list with both TMDB and IMDB IDs
+        const tmdbIdStr = String(tmdbId || movieId);
+        const imdbIdStr = imdb || '';
         
-        console.log('[MOVIE] Providers:', providers.map(p => p.name + ' -> ' + p.url()));
+        const providers = [];
+        
+        // Add TMDB-based providers
+        if (tmdbIdStr && !isNaN(parseInt(tmdbIdStr))) {
+            NEXUS_CONFIG.MOVIE_PROVIDERS.forEach(p => {
+                providers.push({ name: p.name + '-TMDB', url: () => p.url(tmdbIdStr) });
+            });
+        }
+        
+        // Add IMDB-based providers
+        if (imdbIdStr) {
+            NEXUS_CONFIG.MOVIE_PROVIDERS.forEach(p => {
+                providers.push({ name: p.name + '-IMDB', url: () => p.url(imdbIdStr) });
+            });
+        }
+
+        console.log('[MOVIE] Providers:', providers.slice(0,3).map(p => p.name + ' -> ' + p.url()));
 
         // Try to play with fallback
         const success = await this.playWithFallback(providers, (p) => p.url(), engine);
