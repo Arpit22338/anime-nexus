@@ -523,7 +523,7 @@ class AnimeNexus {
             document.getElementById('video-engine').innerHTML = '<div class="loading">SCANNING_FREQUENCIES...</div>';
             
             const controller = new AbortController();
-            const timeoutId = setTimeout(() => controller.abort(), 90000);
+            const timeoutId = setTimeout(() => controller.abort(), 15000);
             
             // Try to get provider ID from AniList ID mapping first (instant)
             let providerId = null;
@@ -534,6 +534,7 @@ class AnimeNexus {
                         { signal: controller.signal }
                     );
                     const lookupData = await lookupResp.json();
+                    console.log('Lookup result:', lookupData);
                     if (lookupData.mapped && lookupData.provider_id) {
                         providerId = lookupData.provider_id;
                     }
@@ -541,6 +542,8 @@ class AnimeNexus {
                     console.log('Lookup failed, falling back to search');
                 }
             }
+            
+            console.log('Using providerId:', providerId);
             
             let data;
             if (providerId) {
@@ -551,6 +554,7 @@ class AnimeNexus {
                 );
                 clearTimeout(timeoutId);
                 data = await response.json();
+                console.log('Episodes response:', data);
                 data.anime = { name: title, id: providerId };
             } else {
                 // Fallback to title-based search
