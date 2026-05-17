@@ -139,7 +139,7 @@ class AnimeNexus {
         });
         
         // Hide all views first
-        const viewMap = {
+const viewMap = {
             'home': 'home',
             'favorites': 'favorites-view',
             'continue': 'continue-view',
@@ -406,23 +406,15 @@ class AnimeNexus {
     }
     goBack() { 
         this.closeWithoutPush(); 
-        // Reset URL and show home
+        // Reset URL
         window.history.replaceState({}, '', '/');
         this.currentAnime = null;
         this.currentEp = 1;
         this.isLoading = false;
         
-        // Show home view
-        document.getElementById('home').style.display = 'block';
-        document.getElementById('movies-view').style.display = 'none';
-        document.getElementById('hentai-view').style.display = 'none';
-        document.getElementById('favorites-view').style.display = 'none';
-        document.getElementById('continue-view').style.display = 'none';
-        
-        // Update nav buttons
-        document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.remove('active'));
-        document.querySelector('.nav-tab[data-tab="home"]').classList.add('active');
-        this.currentTab = 'home';
+        // Show the previous tab instead of always home
+        const prevTab = this.currentTab || 'home';
+        this.showTab(prevTab);
     }
     stripHTML(html) { const tmp = document.createElement('div'); tmp.innerHTML = html; return tmp.textContent || tmp.innerText || ''; }
 
