@@ -12,13 +12,18 @@ const NEXUS_CONFIG = {
         { name: 'DropFile', url: (id, ep, lang) => `https://dropfile.cc/player/tv/anilist-${id}/1/${ep}` },
         { name: 'AniEmbed', url: (id, ep, lang) => `https://aniembed.cc/embed/anime/${id}/${ep}?dub=${lang === 'dub' ? 1 : 0}` },
     ],
-    // Movie/TV providers - reverse engineered from Cineb, NetMirror, etc.
+    // Movie/TV providers - reverse engineered from Cineb, NetMirror, Pikashow, etc.
     MOVIE_PROVIDERS: [
         { name: 'VidSrc', url: (id) => `https://vidsrc.to/embed/movie/${id}` },
         { name: 'VidSrcTMDB', url: (id) => `https://vidsrc.to/embed/tmdb/${id}` },
         { name: '2Embed', url: (id) => `https://www.2embed.cc/embed/${id}` },
         { name: 'VidSrc.in', url: (id) => `https://vidsrc.in/embed/movie/${id}` },
         { name: 'MultiEmbed', url: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1` },
+        { name: 'PikaShow', url: (id) => `https://pikashow.bio/embed/movie/${id}` },
+        { name: 'SuperEmbed', url: (id) => `https://superembed.cc/embed/${id}` },
+        { name: 'StreamTape', url: (id) => `https://streamtape.com/e/${id}` },
+        { name: 'DoodStream', url: (id) => `https://doodstream.com/e/${id}` },
+        { name: 'Filemoon', url: (id) => `https://filemoon.to/e/${id}` },
     ],
     TV_PROVIDERS: [
         { name: 'VidSrc', url: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}` },
@@ -91,30 +96,63 @@ class AnimeNexus {
         document.getElementById('search-btn').addEventListener('click', () => this.search());
         document.getElementById('main-search').addEventListener('keypress', (e) => { if (e.key === 'Enter') this.search(); });
         document.getElementById('season-dropdown').addEventListener('change', (e) => { if (e.target.value) this.open(parseInt(e.target.value)); });
+        
+        // Handle URL parameters
         const params = new URLSearchParams(window.location.search);
         const id = params.get('id');
-        if (id) setTimeout(() => this.open(parseInt(id)), 100);
-        window.addEventListener('popstate', () => {
-            const p = new URLSearchParams(window.location.search);
-            const aid = p.get('id');
-            if (aid && (!this.currentAnime || this.currentAnime.id !== parseInt(aid))) this.open(parseInt(aid));
-            else if (!aid && this.currentAnime) this.goBack();
+        
+        // Handle /movies or /hentai paths
+        const path = window.location.pathname;
+        if (path === '/movies') setTimeout(() => this.showTab('movies'), 100);
+        else if (path === '/hentai') setTimeout(() => this.showTab('hentai'), 100);
+        else if (id) setTimeout(() => this.open(parseInt(id)), 100);
+        
+        // Handle browser back/forward
+        window.addEventListener('popstate', (e) => {
+            if (e.state && e.state.tab) {
+                this.showTab(e.state.tab);
+            } else {
+                const p = new URLSearchParams(window.location.search);
+                const aid = p.get('id');
+                if (aid && (!this.currentAnime || this.currentAnime.id !== parseInt(aid))) this.open(parseInt(aid));
+                else if (!aid && this.currentAnime) this.goBack();
+            }
         });
     }
 
     showTab(tab) {
-        if (this.isLoading) return;
+        console.log('[NAV] Switching to tab:', tab);
+        if (this.isLoading && tab !== 'home') {
+            // Allow home tab always
+            if (tab !== 'home') return;
+        }
         this.currentTab = tab;
-        document.querySelectorAll('.nav-tab').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
-        document.getElementById('home').style.display = tab === 'home' ? 'block' : 'none';
-        document.getElementById('favorites-view').style.display = tab === 'favorites' ? 'block' : 'none';
-        document.getElementById('continue-view').style.display = tab === 'continue' ? 'block' : 'none';
-        document.getElementById('movies-view').style.display = tab === 'movies' ? 'block' : 'none';
-        document.getElementById('hentai-view').style.display = tab === 'hentai' ? 'block' : 'none';
+        
+        // Update nav buttons
+        document.querySelectorAll('.nav-tab').forEach(btn => {
+            const isActive = btn.dataset.tab === tab;
+            btn.classList.toggle('active', isActive);
+            console.log('[NAV] Button:', btn.dataset.tab, 'active:', isActive);
+        });
+        
+        // Hide all views first
+        const views = ['home', 'favorites', 'continue', 'movies', 'hentai'];
+        views.forEach(v => {
+            const el = document.getElementById(v + '-view');
+            if (el) {
+                el.style.display = (v === tab) ? 'block' : 'none';
+            }
+        });
+        
+        // Load content
         if (tab === 'favorites') this.loadFavorites();
         if (tab === 'continue') this.loadContinueWatching();
-        if (tab === 'movies') this.loadMovies();
-        if (tab === 'hentai') this.loadHentai();
+        if (tab === 'movies') { this.moviesLoaded = false; this.loadMovies(); }
+        if (tab === 'hentai') { this.hentaiLoaded = false; this.loadHentai(); }
+        
+        // Update URL without page reload
+        const url = tab === 'home' ? '/' : '/' + tab;
+        window.history.replaceState({tab}, '', url);
     }
 
     async loadTrending() {
