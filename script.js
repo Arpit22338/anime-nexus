@@ -136,9 +136,15 @@ class AnimeNexus {
         });
         
         // Hide all views first
-        const views = ['home', 'favorites', 'continue', 'movies', 'hentai'];
-        views.forEach(v => {
-            const el = document.getElementById(v + '-view');
+        const viewMap = {
+            'home': 'home',
+            'favorites': 'favorites-view',
+            'continue': 'continue-view',
+            'movies': 'movies-view',
+            'hentai': 'hentai-view'
+        };
+        Object.keys(viewMap).forEach(v => {
+            const el = document.getElementById(viewMap[v]);
             if (el) {
                 el.style.display = (v === tab) ? 'block' : 'none';
             }
@@ -512,6 +518,13 @@ class AnimeNexus {
         if (this.isLoading) return;
         this.isLoading = true;
         this.clearFallbackTimer();
+        
+        // Ensure we have a valid ID
+        let id = tmdbId || movieId || imdbId;
+        if (!id) id = movieId;
+        
+        console.log('[MOVIE] Playing:', title, 'ID:', id);
+        
         document.getElementById('player-overlay').classList.add('active');
         document.getElementById('bottom-nav').style.display = 'none';
         document.getElementById('back-btn').style.display = 'block';
@@ -522,40 +535,22 @@ class AnimeNexus {
         document.getElementById('server-list').innerHTML = '';
 
         const engine = document.getElementById('video-engine');
-        engine.innerHTML = '<div class="loading">Resolving movie source...</div>';
+        engine.innerHTML = '<div class="loading">Searching for movie...</div>';
 
-        // Resolve TMDB/IMDB if backend provided TVMaze ids
-        let resolvedTmdb = tmdbId || '';
-        let resolvedImdb = imdbId || '';
+        // Build providers list - use ID directly
+        const providers = NEXUS_CONFIG.MOVIE_PROVIDERS.map(p => ({
+            name: p.name,
+            url: () => p.url(id)
+        }));
         
-        console.log('[MOVIE] movieId:', movieId, 'tmdbId:', tmdbId, 'imdbId:', imdbId);
-        
-        if (!resolvedTmdb && !resolvedImdb && movieId) {
-            // Try to treat movieId as TMDB if it looks like one (numeric and > 1000)
-            if (movieId > 1000) {
-                resolvedTmdb = String(movieId);
-                console.log('[MOVIE] Using movieId as TMDB:', resolvedTmdb);
-            }
-        }
+        console.log('[MOVIE] Providers:', providers.map(p => p.name + ' -> ' + p.url()));
 
-        const candidates = [];
-        if (resolvedTmdb) candidates.push({ id: resolvedTmdb, label: 'TMDB' });
-        if (resolvedImdb) candidates.push({ id: resolvedImdb, label: 'IMDB' });
-        if (candidates.length === 0) candidates.push({ id: String(movieId), label: 'RAW' });
-
-        console.log('[MOVIE] Candidates:', candidates);
-
-        const providers = [];
-        candidates.forEach(c => {
-            NEXUS_CONFIG.MOVIE_PROVIDERS.forEach(p => {
-                const url = p.url(c.id);
-                console.log('[MOVIE] Provider:', p.name, 'URL:', url);
-                providers.push({ name: `${p.name}-${c.label}`, url: () => url });
-            });
-        });
-
+        // Try to play with fallback
         const success = await this.playWithFallback(providers, (p) => p.url(), engine);
-        if (!success) engine.innerHTML = '<div class="error">All movie sources offline</div>';
+        
+        if (!success) {
+            engine.innerHTML = '<div class="error">All movie sources failed.<br>Try again later.</div>';
+        }
         this.isLoading = false;
     }
 
