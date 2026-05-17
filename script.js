@@ -734,10 +734,17 @@ async searchMovies() {
 
         const engine = document.getElementById('video-engine');
         
-        // Try iframe direct - hanime.tv works better with full page
-        engine.innerHTML = `<iframe src="https://hanime.tv/videos/hentai/${slug}" allowfullscreen frameborder="0" style="width:100%;height:100%;border:none;"></iframe>`;
+        // Since hanime.tv blocks embedding, open in new tab
+        const url = `https://hanime.tv/videos/hentai/${slug}`;
+        window.open(url, '_blank');
+        
+        // Show message in player
+        engine.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;height:100%;color:#fff;text-align:center;padding:20px;">
+            <p style="font-size:18px;margin-bottom:20px;">Opening in new tab...</p>
+            <a href="${url}" target="_blank" style="color:#00d4ff;font-size:16px;">Click here if not opened</a>
+        </div>`;
+        
         this.isLoading = false;
-        return;
         if (!success) engine.innerHTML = '<div class="error">No sources available</div>';
         this.isLoading = false;
     }
