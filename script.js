@@ -16,9 +16,8 @@ const NEXUS_CONFIG = {
     MOVIE_PROVIDERS: [
         { name: 'VidSrc', url: (id) => `https://vidsrc.to/embed/movie/${id}` },
         { name: '2Embed', url: (id) => `https://www.2embed.cc/embed/${id}` },
-        { name: 'EmbedSu', url: (id) => `https://embed.su/embed/movie/${id}` },
+        { name: 'VidSrc.in', url: (id) => `https://vidsrc.in/embed/movie/${id}` },
         { name: 'MultiEmbed', url: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1` },
-        { name: 'NetMirror', url: (id) => `https://netmirror.gg/embed/movie/${id}` },
     ],
     TV_PROVIDERS: [
         { name: 'VidSrc', url: (id, s, e) => `https://vidsrc.to/embed/tv/${id}/${s}/${e}` },
@@ -416,7 +415,9 @@ class AnimeNexus {
                 grid.innerHTML = data.movies.map(m => {
                     const escapedTitle = (m.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
                     const escapedImage = (m.image || '').replace(/'/g, "\\'");
-                    return `<div class="anime-card" onclick="Nexus.openMovie(${m.id}, '${escapedTitle}')">
+                    const tmdbId = m.tmdb_id ? String(m.tmdb_id) : '';
+                    const imdbId = m.imdb_id ? String(m.imdb_id) : '';
+                    return `<div class="anime-card" onclick="Nexus.openMovie(${m.id}, '${escapedTitle}', '${tmdbId}', '${imdbId}')">
                         <div class="card-media">
                             <img src="${m.image}" alt="${m.title}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 450%22><rect fill=%22%23111%22 width=%22300%22 height=%22450%22/><text x=%22150%22 y=%22225%22 fill=%22%23666%22 text-anchor=%22middle%22 font-size=%2220%22>No Image</text></svg>'">
                         </div>
@@ -436,7 +437,7 @@ class AnimeNexus {
             const resp = await fetch(NEXUS_CONFIG.BACKEND_API + '/movies/search?q=' + encodeURIComponent(q));
             const data = await resp.json();
             if (data.results && data.results.length > 0) {
-                grid.innerHTML = data.results.map(m => `<div class="anime-card" onclick="Nexus.openMovie(${m.id}, '${(m.title || '').replace(/'/g, "\\'")}')">
+                grid.innerHTML = data.results.map(m => `<div class="anime-card" onclick="Nexus.openMovie(${m.id}, '${(m.title || '').replace(/'/g, "\\'")}', '${m.tmdb_id || ''}', '${m.imdb_id || ''}')">
                     <div class="card-media"><img src="${m.image}" alt="${m.title}" loading="lazy" onerror="this.style.display='none'"></div>
                     <div class="card-info"><h3>${m.title}</h3><p>${m.year} ${m.type}</p></div>
                 </div>`).join('');
@@ -444,7 +445,21 @@ class AnimeNexus {
         } catch (e) { grid.innerHTML = '<div class="error">Search failed</div>'; }
     }
 
-    async openMovie(movieId, title) {
+    async resolveMovieIds(tvmazeId) {
+        try {
+            const resp = await fetch(`https://api.tvmaze.com/shows/${tvmazeId}`);
+            if (!resp.ok) return { tmdb: null, imdb: null };
+            const data = await resp.json();
+            const externals = data.externals || {};
+            const tmdb = externals.tmdb ? String(externals.tmdb) : null;
+            const imdb = externals.imdb ? String(externals.imdb) : null;
+            return { tmdb, imdb };
+        } catch (e) {
+            return { tmdb: null, imdb: null };
+        }
+    }
+
+    async openMovie(movieId, title, tmdbId = '', imdbId = '') {
         this.clearFallbackTimer();
         document.getElementById('player-overlay').classList.add('active');
         document.getElementById('bottom-nav').style.display = 'none';
@@ -456,8 +471,30 @@ class AnimeNexus {
         document.getElementById('server-list').innerHTML = '';
 
         const engine = document.getElementById('video-engine');
-        const getEmbedUrl = (p) => p.url(movieId);
-        const success = await this.playWithFallback(NEXUS_CONFIG.MOVIE_PROVIDERS, getEmbedUrl, engine);
+        engine.innerHTML = '<div class="loading">Resolving movie source...</div>';
+
+        // Resolve TMDB/IMDB if backend provided TVMaze ids
+        let resolvedTmdb = tmdbId || '';
+        let resolvedImdb = imdbId || '';
+        if (!resolvedTmdb && !resolvedImdb) {
+            const resolved = await this.resolveMovieIds(movieId);
+            resolvedTmdb = resolved.tmdb || '';
+            resolvedImdb = resolved.imdb || '';
+        }
+
+        const candidates = [];
+        if (resolvedTmdb) candidates.push({ id: resolvedTmdb, label: 'TMDB' });
+        if (resolvedImdb) candidates.push({ id: resolvedImdb, label: 'IMDB' });
+        if (candidates.length === 0) candidates.push({ id: movieId, label: 'RAW' });
+
+        const providers = [];
+        candidates.forEach(c => {
+            NEXUS_CONFIG.MOVIE_PROVIDERS.forEach(p => {
+                providers.push({ name: `${p.name}-${c.label}`, url: () => p.url(c.id) });
+            });
+        });
+
+        const success = await this.playWithFallback(providers, (p) => p.url(), engine);
         if (!success) engine.innerHTML = '<div class="error">All movie sources offline</div>';
     }
 
@@ -477,7 +514,8 @@ class AnimeNexus {
                     const isFav = favs.some(f => f.id === anime.id);
                     const escapedTitle = title.replace(/'/g, "\\'").replace(/"/g, '&quot;');
                     const escapedImage = image.replace(/'/g, "\\'");
-                    return `<div class="anime-card" onclick="Nexus.openHentai(${anime.id}, '${escapedTitle}')">
+                    const malId = anime.idMal || '';
+                    return `<div class="anime-card" onclick="Nexus.openHentai(${anime.id}, ${malId || 'null'}, '${escapedTitle}')">
                         <div class="card-media">
                             <img src="${image}" alt="${title}" loading="lazy">
                             <button class="fav-btn ${isFav ? 'favorited' : ''}" onclick="Nexus.toggleFavorite({id:${anime.id},title:'${escapedTitle}',coverImage:{extraLarge:'${escapedImage}'}},event)">♥</button>
@@ -489,7 +527,7 @@ class AnimeNexus {
         } catch (e) { grid.innerHTML = '<div class="error">Failed to load</div>'; }
     }
 
-    async openHentai(anilistId, title) {
+    async openHentai(anilistId, malId, title) {
         this.clearFallbackTimer();
         document.getElementById('player-overlay').classList.add('active');
         document.getElementById('bottom-nav').style.display = 'none';
@@ -501,8 +539,17 @@ class AnimeNexus {
         document.getElementById('server-list').innerHTML = '';
 
         const engine = document.getElementById('video-engine');
-        const getEmbedUrl = (p) => p.url(anilistId);
-        const success = await this.playWithFallback(NEXUS_CONFIG.HENTAI_PROVIDERS, getEmbedUrl, engine);
+        const ids = [anilistId];
+        if (malId) ids.push(malId);
+
+        const providers = [];
+        ids.forEach(id => {
+            NEXUS_CONFIG.HENTAI_PROVIDERS.forEach(p => {
+                providers.push({ name: `${p.name}-${id}`, url: () => p.url(id) });
+            });
+        });
+
+        const success = await this.playWithFallback(providers, (p) => p.url(), engine);
         if (!success) engine.innerHTML = '<div class="error">All sources offline</div>';
     }
 }
