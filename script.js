@@ -484,29 +484,58 @@ class AnimeNexus {
             const resp = await fetch(NEXUS_CONFIG.BACKEND_API + '/movies/popular?category=all');
             const data = await resp.json();
             if (data.movies && data.movies.length > 0) {
-                grid.innerHTML = data.movies.map(m => {
-                    const escapedTitle = (m.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
-                    const escapedImage = (m.image || '').replace(/'/g, "\\'");
-                    const tmdbId = m.tmdb_id ? String(m.tmdb_id) : '';
-                    const imdbId = m.imdb_id ? String(m.imdb_id) : '';
-                    return `<div class="anime-card" onclick="Nexus.openMovie(${m.id}, '${escapedTitle}', '${tmdbId}', '${imdbId}')">
-                        <div class="card-media">
-                            <img src="${m.image}" alt="${m.title}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 450%22><rect fill=%22%23111%22 width=%22300%22 height=%22450%22/><text x=%22150%22 y=%22225%22 fill=%22%23666%22 text-anchor=%22middle%22 font-size=%2220%22>No Image</text></svg>'">
-                        </div>
-                        <div class="card-info"><h3>${m.title}</h3><p>${m.year} ${m.rating ? `• ★ ${m.rating}` : ''}</p></div>
-                    </div>`;
-                }).join('');
+                this.renderMovies(data.movies);
             } else { grid.innerHTML = '<div class="error">No movies found</div>'; }
         } catch (e) { grid.innerHTML = '<div class="error">Failed to load movies</div>'; }
+    }
+
+    renderMovies(movies) {
+        const grid = document.getElementById('movies-grid');
+        if (!movies || !movies.length) {
+            grid.innerHTML = '<div class="error">No results found</div>';
+            return;
+        }
+        grid.innerHTML = movies.map(m => {
+            const escapedTitle = (m.title || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            const image = m.poster || m.image || '';
+            const tmdbId = m.tmdbId || m.tmdb_id || '';
+            const imdbId = m.imdbId || m.imdb_id || m.id || '';
+            const year = m.year || m.release_date || '';
+            const rating = m.rating || '';
+            return `<div class="anime-card" onclick="Nexus.openMovie(${m.id}, '${escapedTitle}', '${tmdbId}', '${imdbId}')">
+                <div class="card-media">
+                    <img src="${image}" alt="${m.title}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 450%22><rect fill=%22%23111%22 width=%22300%22 height=%22450%22/><text x=%22150%22 y=%22225%22 fill=%22%23666%22 text-anchor=%22middle%22 font-size=%2220%22>No Image</text></svg>'">
+                </div>
+                <div class="card-info"><h3>${m.title}</h3><p>${year} ${rating ? `• ★ ${rating}` : ''}</p></div>
+            </div>`;
+        }).join('');
     }
 
 async searchMovies() {
         const q = document.getElementById('movie-search').value.trim();
         if (!q) return;
         
-        document.getElementById('movies-grid').innerHTML = '<div class="loading">Searching...</div>';
+        document.getElementById('movies-grid').innerHTML = '<div class="loading">Searching IMDB...</div>';
         
-        // Try backend first
+        // Search IMDB via OMDb API (free tier)
+        try {
+            const resp = await fetch(`https://www.omdbapi.com/?s=${encodeURIComponent(q)}&type=movie&apikey=6e2a5f8`);
+            const data = await resp.json();
+            if (data.Response === 'True' && data.Search?.length) {
+                const movies = data.Search.map(m => ({
+                    id: m.imdbID,
+                    imdbId: m.imdbID,
+                    tmdbId: null,
+                    title: m.Title,
+                    poster: m.Poster !== 'N/A' ? m.Poster : '',
+                    year: m.Year
+                }));
+                this.renderMovies(movies);
+                return;
+            }
+        } catch(e) { console.log('IMDB search failed:', e); }
+        
+        // Fallback: backend
         try {
             const resp = await fetch(NEXUS_CONFIG.BACKEND_API + '/movies/search?q=' + encodeURIComponent(q));
             const data = await resp.json();
@@ -514,27 +543,7 @@ async searchMovies() {
                 this.renderMovies(data.movies);
                 return;
             }
-        } catch(e) { console.log('Backend search failed:', e); }
-        
-        // Fallback: Search AniList for anime/movies
-        try {
-            const searchQuery = `query ($s: String) { Page(page: 1, perPage: 20) { media(search: $s, type: ANIME, format_in: [TV, MOVIE, OVA]) {
-                id idMal title { romaji english } coverImage { extraLarge large } status averageScore format
-            } } }`;
-            const result = await callAniList(searchQuery, { s: q });
-            if (result?.Page?.media?.length) {
-                const movies = result.Page.media.map(m => ({
-                    id: m.id,
-                    tmdbId: null,
-                    imdbId: null,
-                    title: m.title.english || m.title.romaji,
-                    poster: m.coverImage.extraLarge || m.coverImage.large,
-                    year: m.seasonYear || ''
-                }));
-                this.renderMovies(movies);
-                return;
-            }
-        } catch(e) { console.log('AniList search failed:', e); }
+        } catch(e) { console.log('Backend failed:', e); }
         
         document.getElementById('movies-grid').innerHTML = '<div class="error">No results found</div>';
     }
