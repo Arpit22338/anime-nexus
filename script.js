@@ -19,6 +19,7 @@ const NEXUS_CONFIG = {
         { name: '2Embed', url: (id) => `https://www.2embed.cc/embed/${id}` },
         { name: 'VidSrc.in', url: (id) => `https://vidsrc.in/embed/movie/${id}` },
         { name: 'MultiEmbed', url: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1` },
+        { name: 'StreamIMDB', url: (id) => `https://streamimdb.ru/embed/movie/${id}` },
         { name: 'PikaShow', url: (id) => `https://pikashow.bio/embed/movie/${id}` },
         { name: 'SuperEmbed', url: (id) => `https://superembed.cc/embed/${id}` },
         { name: 'StreamTape', url: (id) => `https://streamtape.com/e/${id}` },
