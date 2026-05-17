@@ -658,33 +658,36 @@ async searchMovies() {
             console.warn('AniList hentai failed, falling back to Hanime list');
         }
 
-        // Fallback: use hardcoded H-anime list since scraping may fail
+        // Fallback: use real working H-anime slugs from hanime.tv
         const hentaiList = [
-            { slug: 'goblins-slayer', title: 'Goblin Slayer' },
-            { slug: 'princess-connect-re-dive', title: 'Princess Connect Re:Dive' },
-            { slug: 'uzaki-chan-wants-to-hang-out', title: 'Uzaki-chan Wants to Hang Out' },
-            { slug: 'high-school-dxd', title: 'High School DxD' },
-            { slug: 'queen-s-blade', title: 'Queen\'s Blade' },
-            { slug: 'demon-slayer', title: 'Demon Slayer' },
-            { slug: 'kakegurui', title: 'Kakegurui' },
-            { slug: 'overflow', title: 'Overflow' },
-            { slug: 'parallel-universe', title: 'Parallel Universe' },
-            { slug: 'baki', title: 'Baki' },
-            { slug: 'isekai-mahou-de-harem-wo', title: 'Isekai Mahou de Harem wo' },
-            { slug: 'redial', title: 'Redial' },
-            { slug: 'hybrid-x-angel', title: 'Hybrid x Angel' },
-            { slug: 'busou-renkin', title: 'Busou Renkin' },
-            { slug: 'seikon-no-qwaser', title: 'Seikon no Qwaser' },
+            { slug: 'isekai-harem-sensou', title: 'Isekai Harem Sensou' },
+            { slug: 'kino-no-tabi', title: 'Kino no Tabi' },
+            { slug: 'tsukipro-the-animation-2', title: 'Tsukipro The Animation 2' },
+            { slug: 'tsukipro-the-animation', title: 'Tsukipro The Animation' },
+            { slug: 'harem-battle-shirokuma', title: 'Harem Battle Shirokuma' },
+            { slug: 'bakuon-castle', title: 'Bakuon Castle' },
+            { slug: 'kagura-meirinn', title: 'Kagura Meirinn' },
+            { slug: 'ninja-bare-hentai-4', title: 'Ninja Bare Hentai 4' },
+            { slug: 'seigi-no-mikazuki', title: 'Seigi no Mikazuki' },
+            { slug: 'ryou-joku-brand', title: 'Ryou Joku Brand' },
+            { slug: 'kansen-koi-no-kanransha', title: 'Kansen Koi no Kanransha' },
+            { slug: 'inbyou-gokko', title: 'Inbyou Gokko' },
+            { slug: 'shiro-no-kuro-no-kishi', title: 'Shiro no Kuro no Kishi' },
+            { slug: 'mankai-otome', title: 'Mankai Otome' },
+            { slug: 'daitoshi-ryou-no-yoru', title: 'Daitoshi Ryou no Yoru' },
         ];
         
         grid.innerHTML = hentaiList.map(h => `
             <div class="anime-card" onclick="Nexus.openHentaiSlug('${h.slug}', '${h.title.replace(/'/g, "\\'")}')">
                 <div class="card-media">
-                    <img src="https://hanime-cdn.com/posters/${h.slug}.jpg" alt="${h.title}" loading="lazy" onerror="this.style.display='none'">
+                    <img src="https://img.3hentai.net/thumb/${h.slug}.jpg" alt="${h.title}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 450%22><rect fill=%22%23222%22 width=%22300%22 height=%22450%22/><text x=%22150%22 y=%22225%22 fill=%22%23666%22 text-anchor=%22middle%22>18+</text></svg>'">
                 </div>
                 <div class="card-info"><h3>${h.title}</h3><p>18+</p></div>
             </div>
         `).join('');
+        
+        // Mark as loaded
+        this.hentaiLoaded = true;
     }
 
     async openHentai(anilistId, malId, title) {
