@@ -257,26 +257,88 @@ main { padding-bottom: 80px; }
     }
     
     .player-overlay {
-        padding: 1rem;
+        padding: 0;
     }
     
     .player-content {
         max-width: 100%;
-        padding: 1rem;
+        padding: 0.5rem;
+    }
+    
+    .player-main {
+        grid-template-columns: 1fr !important;
+        gap: 0.5rem !important;
+    }
+    
+    .control-panel {
+        height: auto !important;
+        position: relative !important;
+        padding: 1rem !important;
+        max-height: 50vh !important;
     }
     
     .details-title {
-        font-size: 1.5rem;
+        font-size: 1.2rem;
+        padding: 0 0.5rem;
     }
     
     .details-desc {
-        font-size: 0.8rem;
+        font-size: 0.75rem;
+        padding: 0 0.5rem;
+        max-height: 120px;
     }
     
     .close-btn {
-        top: 1rem;
-        right: 1rem;
+        top: 0.5rem;
+        right: 0.5rem;
         padding: 0.4rem 0.8rem;
         font-size: 0.65rem;
     }
+    
+    .ep-grid {
+        grid-template-columns: repeat(6, 1fr) !important;
+        max-height: 250px !important;
+    }
+    
+    .section-title {
+        font-size: 1rem;
+        padding: 0.8rem 3%;
+    }
+    
+    .bottom-nav {
+        padding: 0.3rem 0;
+    }
+    
+    .nav-icon { font-size: 1rem; }
+    .nav-label { font-size: 0.5rem; }
+}
+
+@media (max-width: 480px) {
+    .anime-grid {
+        grid-template-columns: repeat(2, 1fr);
+        gap: 0.6rem;
+        padding: 0.8rem 2%;
+    }
+    
+    .card-info h3 { font-size: 0.7rem; }
+    .card-info p { font-size: 0.6rem; }
+    
+    .ep-grid {
+        grid-template-columns: repeat(5, 1fr) !important;
+    }
+    
+    .details-title { font-size: 1rem; }
+    .details-desc { font-size: 0.7rem; }
+}
+
+.ep-badge {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    background: var(--accent);
+    color: var(--bg);
+    font-size: 0.6rem;
+    font-weight: 700;
+    padding: 3px 8px;
+    border-radius: 2px;
 }
