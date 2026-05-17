@@ -15,6 +15,7 @@ const NEXUS_CONFIG = {
     // Movie/TV providers - reverse engineered from Cineb, NetMirror, etc.
     MOVIE_PROVIDERS: [
         { name: 'VidSrc', url: (id) => `https://vidsrc.to/embed/movie/${id}` },
+        { name: 'VidSrcTMDB', url: (id) => `https://vidsrc.to/embed/tmdb/${id}` },
         { name: '2Embed', url: (id) => `https://www.2embed.cc/embed/${id}` },
         { name: 'VidSrc.in', url: (id) => `https://vidsrc.in/embed/movie/${id}` },
         { name: 'MultiEmbed', url: (id) => `https://multiembed.mov/?video_id=${id}&tmdb=1` },
@@ -47,7 +48,7 @@ const query = {
     } }`,
     search: `query ($s: String) { Page(page: 1, perPage: 12) { media(search: $s, type: ANIME) {
         id idMal title { romaji english } coverImage { extraLarge large } status averageScore episodes format } } }`,
-    hAnime: `query { Page(page: 1, perPage: 30) { media(type: ANIME, genre_in: ["Hentai"], sort: TRENDING_DESC) {
+    hAnime: `query { Page(page: 1, perPage: 30) { media(type: ANIME, format: OVA, genre_in: ["Ecchi", "Hentai"], isAdult: true, sort: TRENDING_DESC) {
         id idMal title { romaji english } coverImage { extraLarge large } status averageScore episodes format } } }`
 };
 
