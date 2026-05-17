@@ -67,6 +67,24 @@ body { background: var(--bg); color: var(--text); font-family: var(--font-mono);
     .control-panel { height: auto !important; position: relative !important; }
 }
 
+@media (max-width: 768px) {
+    .nexus-nav { flex-direction: column; align-items: stretch; }
+    .search-bar { max-width: 100%; }
+    .player-content { padding: 1rem; }
+    .details-title { font-size: 1.4rem; }
+    .details-desc { font-size: 0.8rem; }
+    .control-panel { padding: 1rem; }
+    .ep-grid { grid-template-columns: repeat(4, 1fr); max-height: 320px; }
+    .anime-grid { grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); }
+    .bottom-nav { padding-bottom: env(safe-area-inset-bottom); }
+}
+
+@media (max-width: 480px) {
+    .ep-grid { grid-template-columns: repeat(3, 1fr); }
+    .nav-label { font-size: 0.45rem; }
+    .card-info h3 { font-size: 0.7rem; }
+}
+
 .video-container { aspect-ratio: 16/9; background: #000; border: 1px solid rgba(255,255,255,0.05); }
 .video-container iframe { width: 100%; height: 100%; border: none; }
 

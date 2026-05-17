@@ -155,7 +155,7 @@ class AnimeNexus {
         }).join('');
     }
 
-    async open(anilistId) {
+    async open(anilistId, startEpisode = 1) {
         if (this.isLoading) return;
         this.isLoading = true;
         this.clearFallbackTimer();
@@ -173,14 +173,14 @@ class AnimeNexus {
             if (!data || !data.Media) { document.getElementById('video-engine').innerHTML = '<div class="error">Failed to load anime</div>'; return; }
             this.currentAnime = data.Media;
             this.totalEps = this.currentAnime.episodes || (this.currentAnime.status === 'RELEASING' ? 1200 : 0);
-            this.currentEp = 1;
+            this.currentEp = startEpisode || 1;
             this.epPage = 1;
             document.getElementById('display-title').textContent = this.currentAnime.title.romaji || this.currentAnime.title.english;
             document.getElementById('display-desc').textContent = this.stripHTML(this.currentAnime.description || 'No description available');
             this.populateSeasons();
             this.populateControls();
             this.loadEpisodes();
-            this.playEpisode(1);
+            this.playEpisode(this.currentEp);
         } catch (error) {
             console.error('Failed to open anime:', error);
             document.getElementById('video-engine').innerHTML = `<div class="error">Error: ${error.message}</div>`;
@@ -396,7 +396,7 @@ class AnimeNexus {
             const title = data.title || 'Unknown';
             const thumb = data.thumbnail || '';
             const ep = data.episode || 1;
-            return `<div class="anime-card" onclick="Nexus.open(${id})">
+            return `<div class="anime-card" onclick="Nexus.open(${id}, ${ep})">
                 <div class="card-media"><img src="${thumb}" alt="${title}" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 450%22><rect fill=%22%23111%22 width=%22300%22 height=%22450%22/><text x=%22150%22 y=%22225%22 fill=%22%23666%22 text-anchor=%22middle%22 font-size=%2220%22>No Image</text></svg>'"><div class="ep-badge">EP ${ep}</div></div>
                 <div class="card-info"><h3>${title}</h3><p>Episode ${ep}</p></div>
             </div>`;
@@ -523,8 +523,30 @@ class AnimeNexus {
                         <div class="card-info"><h3>${title}</h3><p>${anime.format || ''} ${eps !== '??' ? `• ${eps} eps` : ''}</p></div>
                     </div>`;
                 }).join('');
-            } else { grid.innerHTML = '<div class="error">No content found</div>'; }
-        } catch (e) { grid.innerHTML = '<div class="error">Failed to load</div>'; }
+                return;
+            }
+        } catch (e) {
+            console.warn('AniList hentai failed, falling back to Hanime list');
+        }
+
+        // Fallback: scrape Hanime listing for slugs
+        try {
+            const resp = await fetch('https://r.jina.ai/http://hanime.tv/videos/hentai');
+            const text = await resp.text();
+            const slugs = Array.from(new Set((text.match(/\/videos\/hentai\/([a-z0-9\-]+)/g) || [])
+                .map(s => s.replace('/videos/hentai/', '')))).slice(0, 40);
+            if (slugs.length === 0) throw new Error('No slugs found');
+
+            grid.innerHTML = slugs.map(slug => {
+                const title = slug.replace(/-/g, ' ');
+                return `<div class="anime-card" onclick="Nexus.openHentaiSlug('${slug}', '${title.replace(/'/g, "\\'")}')">
+                    <div class="card-media"><img src="https://hanime-cdn.com/posters/${slug}.jpg" alt="${title}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 450%22><rect fill=%22%23111%22 width=%22300%22 height=%22450%22/><text x=%22150%22 y=%22225%22 fill=%22%23666%22 text-anchor=%22middle%22 font-size=%2220%22>No Image</text></svg>'"></div>
+                    <div class="card-info"><h3>${title}</h3><p>Hanime</p></div>
+                </div>`;
+            }).join('');
+        } catch (e) {
+            grid.innerHTML = '<div class="error">No content found</div>';
+        }
     }
 
     async openHentai(anilistId, malId, title) {
@@ -551,6 +573,22 @@ class AnimeNexus {
 
         const success = await this.playWithFallback(providers, (p) => p.url(), engine);
         if (!success) engine.innerHTML = '<div class="error">All sources offline</div>';
+    }
+
+    async openHentaiSlug(slug, title) {
+        this.clearFallbackTimer();
+        document.getElementById('player-overlay').classList.add('active');
+        document.getElementById('bottom-nav').style.display = 'none';
+        document.getElementById('back-btn').style.display = 'block';
+        document.getElementById('display-title').textContent = title || 'Loading...';
+        document.getElementById('display-desc').textContent = '';
+        document.getElementById('episode-list').innerHTML = '';
+        document.getElementById('season-dropdown').innerHTML = '<option value="">18+</option>';
+        document.getElementById('server-list').innerHTML = '';
+
+        const engine = document.getElementById('video-engine');
+        const url = `https://hanime.tv/videos/hentai/${slug}`;
+        engine.innerHTML = `<iframe src="${url}" allowfullscreen frameborder="0" style="width:100%;height:100%;border:none;"></iframe>`;
     }
 }
 
