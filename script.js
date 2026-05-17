@@ -761,5 +761,109 @@ class AnimeNexus {
     }
 }
 
+// ==================== MOVIES ====================
+    loadMovies() {
+        const grid = document.getElementById('movies-grid');
+        if (!grid.innerHTML.trim()) {
+            this.fetchMovies(NEXUS_CONFIG.BACKEND_API + '/movies/popular?category=all', grid, 'movie');
+        }
+        
+        // Search handler
+        const searchInput = document.getElementById('movie-search');
+        const searchBtn = document.getElementById('movie-search-btn');
+        if (searchBtn && !searchBtn.hasAttribute('data-listener')) {
+            searchBtn.setAttribute('data-listener', 'true');
+            searchBtn.addEventListener('click', () => this.searchMovies());
+            searchInput.addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') this.searchMovies();
+            });
+        }
+    }
+    
+    async searchMovies() {
+        const query = document.getElementById('movie-search').value.trim();
+        if (!query) return;
+        
+        const grid = document.getElementById('movies-grid');
+        grid.innerHTML = '<div class="loading">Searching...</div>';
+        
+        try {
+            const resp = await fetch(NEXUS_CONFIG.BACKEND_API + '/movies/search?q=' + encodeURIComponent(query));
+            const data = await resp.json();
+            
+            if (data.success && data.results) {
+                grid.innerHTML = '';
+                data.results.forEach(movie => {
+                    grid.innerHTML += this.createMovieCard(movie);
+                });
+                if (!grid.innerHTML) {
+                    grid.innerHTML = '<div class="no-results">No movies found</div>';
+                }
+            }
+        } catch (e) {
+            grid.innerHTML = '<div class="error">Search failed</div>';
+        }
+    }
+    
+    createMovieCard(movie) {
+        const img = movie.image || 'data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" width="150" height="225"><rect fill="%23333" width="150" height="225"/><text fill="%23666" x="50%" y="50%">No Image</text></svg>';
+        return `
+            <div class="anime-card" onclick="Nexus.openMovie(${movie.id})">
+                <img src="${img}" alt="${movie.title}" loading="lazy">
+                <div class="card-info">
+                    <h3 class="card-title">${movie.title}</h3>
+                    <p class="card-meta">${movie.year || 'N/A'} | ${movie.type || 'Movie'}</p>
+                    ${movie.rating ? `<p class="card-rating">★ ${movie.rating}</p>` : ''}
+                </div>
+            </div>
+        `;
+    }
+    
+    openMovie(movieId) {
+        this.openPlayer('movie', { id: movieId });
+    }
+    
+    async fetchMovies(url, grid, type) {
+        try {
+            const resp = await fetch(url);
+            const data = await resp.json();
+            
+            if (data.movies || data.results) {
+                const items = data.movies || data.results;
+                grid.innerHTML = '';
+                items.forEach(movie => {
+                    grid.innerHTML += this.createMovieCard(movie);
+                });
+            }
+        } catch (e) {
+            grid.innerHTML = '<div class="error">Failed to load movies</div>';
+        }
+    }
+    
+    openPlayer(type, data) {
+        // For movies, show embed options
+        const overlay = document.getElementById('player-overlay');
+        const titleEl = document.getElementById('display-title');
+        const videoContainer = document.getElementById('video-engine');
+        
+        overlay.style.display = 'flex';
+        titleEl.textContent = type === 'movie' ? 'Movie Player' : 'Loading...';
+        
+        // Get streaming sources
+        const url = type === 'movie' 
+            ? NEXUS_CONFIG.BACKEND_API + '/movies/stream/' + data.id
+            : NEXUS_CONFIG.BACKEND_API + '/tv/stream/' + data.id + '/' + (data.season || 1) + '/' + (data.episode || 1);
+        
+        fetch(url).then(r => r.json()).then(streamData => {
+            if (streamData.success && streamData.sources && streamData.sources.length > 0) {
+                // Show first source as iframe
+                const embedUrl = streamData.sources[0].embed_url;
+                videoContainer.innerHTML = `<iframe src="${embedUrl}" frameborder="0" allowfullscreen style="width:100%;height:100%;"></iframe>`;
+            } else {
+                videoContainer.innerHTML = '<div style="padding:20px;text-align:center;color:#888;">No streaming sources available</div>';
+            }
+        });
+    }
+
 // Initialize
 const Nexus = new AnimeNexus();
