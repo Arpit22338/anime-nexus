@@ -48,7 +48,7 @@ const query = {
     } }`,
     search: `query ($s: String) { Page(page: 1, perPage: 12) { media(search: $s, type: ANIME) {
         id idMal title { romaji english } coverImage { extraLarge large } status averageScore episodes format } } }`,
-    hAnime: `query { Page(page: 1, perPage: 30) { media(type: ANIME, format: OVA, genre_in: ["Ecchi", "Hentai"], isAdult: true, sort: TRENDING_DESC) {
+    hAnime: `query { Page(page: 1, perPage: 30) { media(type: ANIME, format: OVA, genre: "Ecchi", sort: POPULARITY_DESC) {
         id idMal title { romaji english } coverImage { extraLarge large } status averageScore episodes format } } }`
 };
 
@@ -516,8 +516,10 @@ class AnimeNexus {
         this.hentaiLoaded = true;
         const grid = document.getElementById('hentai-grid');
         grid.innerHTML = '<div class="loading">Loading 18+ content...</div>';
+        console.log('[HENTAI] Starting to load...');
         try {
             const data = await callAniList(query.hAnime);
+            console.log('[HENTAI] Received data:', data);
             if (data && data.Page && data.Page.media && data.Page.media.length > 0) {
                 const favs = this.getFavorites();
                 grid.innerHTML = data.Page.media.map(anime => {
@@ -539,6 +541,7 @@ class AnimeNexus {
                 return;
             }
         } catch (e) {
+            console.error('[HENTAI] Error loading:', e);
             console.warn('AniList hentai failed, falling back to Hanime list');
         }
 
