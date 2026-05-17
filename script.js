@@ -1,12 +1,11 @@
 /**
- * ANI//NEXUS - Protocol v32.0 (RESTORED + WORKING EMBEDS)
- * Based on original Claude Opus structure with working embed providers
+ * ANI//NEXUS - Protocol v33.0 (AUTO-FAILOVER + CACHING)
+ * Sources auto-failover, AniList caching, working movies/hentai
  */
 
 const NEXUS_CONFIG = {
     ANILIST: 'https://graphql.anilist.co/',
     BACKEND_API: 'https://anime-nexus-api.livelyisland-018542b8.southeastasia.azurecontainerapps.io/api',
-    // Working anime embed providers
     EMBED_PROVIDERS: [
         { name: 'VidNest', url: (id, ep) => `https://vidnest.fun/anime/${id}/${ep}/sub` },
         { name: 'SpenEmbed', url: (id, ep) => `https://spencerdevs.xyz/anime/${id}/${ep}` },
@@ -29,20 +28,50 @@ const query = {
         id idMal title { romaji english } coverImage { extraLarge large } status averageScore episodes format } } }`
 };
 
-const callAniList = async (q, vars = {}) => {
-    try {
-        const res = await fetch(NEXUS_CONFIG.ANILIST, { 
-            method: 'POST', 
-            headers: { 'Content-Type': 'application/json' }, 
-            body: JSON.stringify({ query: q, variables: vars }) 
-        });
-        const json = await res.json();
-        return json.data;
-    } catch (e) { 
-        console.error('AniList error:', e);
-        return null; 
+// ==================== CACHING ====================
+const Cache = {
+    _store: {},
+    TTL: 3600000, // 1 hour
+
+    get(key) {
+        const item = this._store[key];
+        if (item && (Date.now() - item.timestamp) < this.TTL) {
+            return item.data;
+        }
+        if (item) delete this._store[key];
+        return null;
+    },
+
+    set(key, data) {
+        this._store[key] = { data, timestamp: Date.now() };
+    },
+
+    clear() {
+        this._store = {};
     }
 };
+
+async function callAniList(q, vars = {}) {
+    const cacheKey = JSON.stringify({ q, vars });
+    const cached = Cache.get(cacheKey);
+    if (cached) return cached;
+
+    try {
+        const res = await fetch(NEXUS_CONFIG.ANILIST, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ query: q, variables: vars })
+        });
+        const json = await res.json();
+        if (json.data) {
+            Cache.set(cacheKey, json.data);
+        }
+        return json.data;
+    } catch (e) {
+        console.error('AniList error:', e);
+        return null;
+    }
+}
 
 class AnimeNexus {
     constructor() {
@@ -94,7 +123,7 @@ class AnimeNexus {
         if (data && data.Page && data.Page.media) {
             this.renderGrid(data.Page.media, grid);
         } else {
-            grid.innerHTML = '<div class="error">Failed to load trending</div>';
+            grid.innerHTML = '<div class="error">Failed to load. Refresh to retry.</div>';
         }
     }
 
@@ -157,13 +186,15 @@ class AnimeNexus {
             this.currentAnime = data.Media;
             this.totalEps = this.currentAnime.episodes || 0;
             this.currentEp = 1;
+            this.activeProviderIdx = 0;
 
             document.getElementById('display-title').textContent = this.currentAnime.title.romaji || this.currentAnime.title.english;
             document.getElementById('display-desc').textContent = this.stripHTML(this.currentAnime.description || 'No description available');
 
             this.populateSeasons();
-            this.populateServers();
+            this.populateSources();
             this.loadEpisodes();
+            this.playEpisode(1);
         } catch (error) {
             console.error('Failed to open anime:', error);
             document.getElementById('video-engine').innerHTML = `<div class="error">Error: ${error.message}</div>`;
@@ -205,16 +236,16 @@ class AnimeNexus {
         });
     }
 
-    populateServers() {
+    populateSources() {
         const container = document.getElementById('server-list');
         container.innerHTML = NEXUS_CONFIG.EMBED_PROVIDERS.map((p, idx) => `
-            <button class="server-btn ${idx === 0 ? 'active' : ''}" onclick="Nexus.setProvider(${idx})">
+            <button class="server-btn ${idx === 0 ? 'active' : ''}" onclick="Nexus.setSource(${idx})">
                 ${p.name.toUpperCase()}
             </button>
         `).join('');
     }
 
-    setProvider(idx) {
+    setSource(idx) {
         this.activeProviderIdx = idx;
         document.querySelectorAll('.server-btn').forEach((btn, i) => {
             btn.classList.toggle('active', i === idx);
@@ -247,19 +278,47 @@ class AnimeNexus {
         const engine = document.getElementById('video-engine');
         engine.innerHTML = '<div class="loading">LOADING_STREAM...</div>';
 
-        const provider = NEXUS_CONFIG.EMBED_PROVIDERS[this.activeProviderIdx];
-        const embedUrl = provider.url(this.currentAnime.id, episodeNum);
+        // Try current provider first, then failover
+        const tried = new Set();
+        let startIdx = this.activeProviderIdx;
         
-        engine.innerHTML = `
-            <iframe 
-                src="${embedUrl}" 
-                allowfullscreen="true" 
-                frameborder="0" 
-                scrolling="no"
-                allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
-                style="width: 100%; height: 100%; border: none;"
-            ></iframe>
-        `;
+        for (let i = 0; i < NEXUS_CONFIG.EMBED_PROVIDERS.length; i++) {
+            const idx = (startIdx + i) % NEXUS_CONFIG.EMBED_PROVIDERS.length;
+            if (tried.has(idx)) continue;
+            tried.add(idx);
+            
+            const provider = NEXUS_CONFIG.EMBED_PROVIDERS[idx];
+            const embedUrl = provider.url(this.currentAnime.id, episodeNum);
+            
+            try {
+                // Quick check if URL is reachable
+                const resp = await fetch(embedUrl, { method: 'HEAD', mode: 'no-cors' });
+                
+                // If we get here, URL is reachable
+                engine.innerHTML = `
+                    <iframe 
+                        src="${embedUrl}" 
+                        allowfullscreen="true" 
+                        frameborder="0" 
+                        scrolling="no"
+                        allow="autoplay; fullscreen; encrypted-media; picture-in-picture"
+                        style="width: 100%; height: 100%; border: none;"
+                    ></iframe>
+                `;
+                this.activeProviderIdx = idx;
+                document.querySelectorAll('.server-btn').forEach((btn, j) => {
+                    btn.classList.toggle('active', j === idx);
+                });
+                break;
+            } catch (e) {
+                console.log(`${provider.name} failed, trying next...`);
+                continue;
+            }
+        }
+        
+        if (tried.size === NEXUS_CONFIG.EMBED_PROVIDERS.length) {
+            engine.innerHTML = '<div class="error">All sources offline. Try again later.</div>';
+        }
 
         this.saveWatchProgress(this.currentAnime.id, {
             title: this.currentAnime.title.romaji || this.currentAnime.title.english,
@@ -391,7 +450,7 @@ class AnimeNexus {
     // ==================== MOVIES ====================
     async loadMovies() {
         const grid = document.getElementById('movies-grid');
-        if (grid.innerHTML.trim()) return;
+        if (grid.innerHTML.trim() && !grid.innerHTML.includes('Loading')) return;
         
         grid.innerHTML = '<div class="loading">Loading movies...</div>';
         
@@ -471,7 +530,7 @@ class AnimeNexus {
     // ==================== HENTAI ====================
     async loadHentai() {
         const grid = document.getElementById('hentai-grid');
-        if (grid.innerHTML.trim()) return;
+        if (grid.innerHTML.trim() && !grid.innerHTML.includes('Loading')) return;
         
         grid.innerHTML = '<div class="loading">Loading providers...</div>';
         
@@ -479,9 +538,9 @@ class AnimeNexus {
             const resp = await fetch(NEXUS_CONFIG.BACKEND_API + '/hentai/providers');
             const data = await resp.json();
             
-            if (data.providers) {
+            if (data.providers && data.providers.length > 0) {
                 grid.innerHTML = data.providers.map(p => `
-                    <div class="anime-card" onclick="Nexus.openHentai('${p.id}', '${p.name}', '${p.url}')">
+                    <div class="anime-card" onclick="window.open('${p.url}', '_blank')">
                         <div class="card-media">
                             <img src="https://via.placeholder.com/150x200/1a1a2e/00ff9f?text=18%2B" alt="${p.name}">
                         </div>
@@ -491,14 +550,12 @@ class AnimeNexus {
                         </div>
                     </div>
                 `).join('');
+            } else {
+                grid.innerHTML = '<div class="error">No providers found</div>';
             }
         } catch (e) {
             grid.innerHTML = '<div class="error">Failed to load hentai providers</div>';
         }
-    }
-
-    openHentai(providerId, providerName, baseUrl) {
-        window.open(baseUrl, '_blank');
     }
 }
 
