@@ -500,21 +500,43 @@ class AnimeNexus {
         } catch (e) { grid.innerHTML = '<div class="error">Failed to load movies</div>'; }
     }
 
-    async searchMovies() {
+async searchMovies() {
         const q = document.getElementById('movie-search').value.trim();
         if (!q) return;
-        const grid = document.getElementById('movies-grid');
-        grid.innerHTML = '<div class="loading">Searching...</div>';
+        
+        document.getElementById('movies-grid').innerHTML = '<div class="loading">Searching...</div>';
+        
+        // Try backend first
         try {
             const resp = await fetch(NEXUS_CONFIG.BACKEND_API + '/movies/search?q=' + encodeURIComponent(q));
             const data = await resp.json();
-            if (data.results && data.results.length > 0) {
-                grid.innerHTML = data.results.map(m => `<div class="anime-card" onclick="Nexus.openMovie(${m.id}, '${(m.title || '').replace(/'/g, "\\'")}', '${m.tmdb_id || ''}', '${m.imdb_id || ''}')">
-                    <div class="card-media"><img src="${m.image}" alt="${m.title}" loading="lazy" onerror="this.style.display='none'"></div>
-                    <div class="card-info"><h3>${m.title}</h3><p>${m.year} ${m.type}</p></div>
-                </div>`).join('');
-            } else { grid.innerHTML = '<div class="error">No results</div>'; }
-        } catch (e) { grid.innerHTML = '<div class="error">Search failed</div>'; }
+            if (data.movies && data.movies.length) {
+                this.renderMovies(data.movies);
+                return;
+            }
+        } catch(e) { console.log('Backend search failed:', e); }
+        
+        // Fallback: Search AniList for anime/movies
+        try {
+            const searchQuery = `query ($s: String) { Page(page: 1, perPage: 20) { media(search: $s, type: ANIME, format_in: [TV, MOVIE, OVA]) {
+                id idMal title { romaji english } coverImage { extraLarge large } status averageScore format
+            } } }`;
+            const result = await callAniList(searchQuery, { s: q });
+            if (result?.Page?.media?.length) {
+                const movies = result.Page.media.map(m => ({
+                    id: m.id,
+                    tmdbId: null,
+                    imdbId: null,
+                    title: m.title.english || m.title.romaji,
+                    poster: m.coverImage.extraLarge || m.coverImage.large,
+                    year: m.seasonYear || ''
+                }));
+                this.renderMovies(movies);
+                return;
+            }
+        } catch(e) { console.log('AniList search failed:', e); }
+        
+        document.getElementById('movies-grid').innerHTML = '<div class="error">No results found</div>';
     }
 
     async resolveMovieIds(tvmazeId) {
