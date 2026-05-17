@@ -657,24 +657,33 @@ async searchMovies() {
             console.warn('AniList hentai failed, falling back to Hanime list');
         }
 
-        // Fallback: scrape Hanime listing for slugs
-        try {
-            const resp = await fetch('https://r.jina.ai/http://hanime.tv/videos/hentai');
-            const text = await resp.text();
-            const slugs = Array.from(new Set((text.match(/\/videos\/hentai\/([a-z0-9\-]+)/g) || [])
-                .map(s => s.replace('/videos/hentai/', '')))).slice(0, 40);
-            if (slugs.length === 0) throw new Error('No slugs found');
-
-            grid.innerHTML = slugs.map(slug => {
-                const title = slug.replace(/-/g, ' ');
-                return `<div class="anime-card" onclick="Nexus.openHentaiSlug('${slug}', '${title.replace(/'/g, "\\'")}')">
-                    <div class="card-media"><img src="https://hanime-cdn.com/posters/${slug}.jpg" alt="${title}" loading="lazy" onerror="this.src='data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 300 450%22><rect fill=%22%23111%22 width=%22300%22 height=%22450%22/><text x=%22150%22 y=%22225%22 fill=%22%23666%22 text-anchor=%22middle%22 font-size=%2220%22>No Image</text></svg>'"></div>
-                    <div class="card-info"><h3>${title}</h3><p>Hanime</p></div>
-                </div>`;
-            }).join('');
-        } catch (e) {
-            grid.innerHTML = '<div class="error">No content found</div>';
-        }
+        // Fallback: use hardcoded H-anime list since scraping may fail
+        const hentaiList = [
+            { slug: 'goblins-slayer', title: 'Goblin Slayer' },
+            { slug: 'princess-connect-re-dive', title: 'Princess Connect Re:Dive' },
+            { slug: 'uzaki-chan-wants-to-hang-out', title: 'Uzaki-chan Wants to Hang Out' },
+            { slug: 'high-school-dxd', title: 'High School DxD' },
+            { slug: 'queen-s-blade', title: 'Queen\'s Blade' },
+            { slug: 'demon-slayer', title: 'Demon Slayer' },
+            { slug: 'kakegurui', title: 'Kakegurui' },
+            { slug: 'overflow', title: 'Overflow' },
+            { slug: 'parallel-universe', title: 'Parallel Universe' },
+            { slug: 'baki', title: 'Baki' },
+            { slug: 'isekai-mahou-de-harem-wo', title: 'Isekai Mahou de Harem wo' },
+            { slug: 'redial', title: 'Redial' },
+            { slug: 'hybrid-x-angel', title: 'Hybrid x Angel' },
+            { slug: 'busou-renkin', title: 'Busou Renkin' },
+            { slug: 'seikon-no-qwaser', title: 'Seikon no Qwaser' },
+        ];
+        
+        grid.innerHTML = hentaiList.map(h => `
+            <div class="anime-card" onclick="Nexus.openHentaiSlug('${h.slug}', '${h.title.replace(/'/g, "\\'")}')">
+                <div class="card-media">
+                    <img src="https://hanime-cdn.com/posters/${h.slug}.jpg" alt="${h.title}" loading="lazy" onerror="this.style.display='none'">
+                </div>
+                <div class="card-info"><h3>${h.title}</h3><p>18+</p></div>
+            </div>
+        `).join('');
     }
 
     async openHentai(anilistId, malId, title) {
