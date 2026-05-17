@@ -1,12 +1,12 @@
 {
   "rewrites": [
-    {
-      "source": "/animeplayer",
-      "destination": "/index.html"
-    },
-    {
-      "source": "/animeplayer/:path*",
-      "destination": "/index.html"
-    }
+    { "source": "/movies", "destination": "/index.html" },
+    { "source": "/hentai", "destination": "/index.html" },
+    { "source": "/favorites", "destination": "/index.html" },
+    { "source": "/continue", "destination": "/index.html" },
+    { "source": "/animeplayer", "destination": "/index.html" },
+    { "source": "/animeplayer/:id", "destination": "/index.html" },
+    { "source": "/movies/:id", "destination": "/index.html" },
+    { "source": "/:path", "destination": "/index.html" }
   ]
 }
