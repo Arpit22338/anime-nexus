@@ -330,16 +330,26 @@ class AnimeNexus {
     }
 
     async loadTrending() {
+        const grid = document.getElementById('trending-grid');
+        grid.innerHTML = '<div class="loading">Loading anime...</div>';
+        
         try {
             const response = await fetch(NEXUS_CONFIG.ANILIST, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ query: query.trending })
             });
-            const { data } = await response.json();
-            this.displayAnimeGrid(data.Page.media);
+            const json = await response.json();
+            const { data } = json;
+            
+            if (data && data.Page && data.Page.media) {
+                this.displayAnimeGrid(data.Page.media);
+            } else {
+                grid.innerHTML = '<div class="error">No data returned. API might be down.</div>';
+            }
         } catch (error) {
             console.error('Failed to load trending:', error);
+            grid.innerHTML = '<div class="error">Error: ' + error.message + '</div>';
         }
     }
 
